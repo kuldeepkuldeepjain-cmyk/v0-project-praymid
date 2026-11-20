@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { query, execute, withTransaction } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
-import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
+import { FUNDED_PLANS, getFundedBaseAmount } from "@/lib/funded-account"
 import { getChallengePlan } from "@/lib/challenge-account"
 
 export async function GET(req: NextRequest) {
@@ -181,9 +181,10 @@ export async function POST(req: NextRequest) {
         }
 
         const participantResult = await client.query(
-          `SELECT account_balance, account_type, funded_amount, funded_initial_balance
+          `SELECT account_balance, account_type, funded_amount, funded_initial_balance, funded_breach_status,
+                  (funded_breach_at IS NULL OR funded_breach_at <= (SELECT created_at FROM topup_requests WHERE id = $2)) AS payment_after_breach
            FROM participants WHERE id = $1 FOR UPDATE`,
-          [payment.participant_id],
+          [payment.participant_id, requestId],
         )
         const participant = participantResult.rows[0]
         if (!participant) throw new Error("TOPUP_PARTICIPANT_MISSING")
@@ -197,39 +198,55 @@ export async function POST(req: NextRequest) {
           throw new Error("TOPUP_INVALID_AMOUNT")
         }
         const requestedFundingAmount = Number((depositAmount + promoBonusAmount).toFixed(2))
-        const fundedSizes: Record<number, number> = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
-  const isFundedAccount = participant.account_type === "funded"
-  const isChallengeUpgrade = participant.account_type === "challenge" && payment.payment_method === "funded_tier"
-  // A first funded activation or challenge upgrade is tier-based regardless of active/frozen status.
-  const isInitialFundedTopUp = payment.payment_method === "funded_tier"
-  && (isChallengeUpgrade || (isFundedAccount && !Number(participant.funded_initial_balance || 0) && Number(participant.account_balance || 0) <= 0))
-  const fundedCredit = fundedSizes[requestedFundingAmount]
-  if (isInitialFundedTopUp && !fundedCredit) throw new Error("TOPUP_INVALID_FUNDED_TIER")
+        const isFundedAccount = participant.account_type === "funded"
+        const isFundedRestart = payment.payment_method === "funded_restart"
+        const isBreached = isFundedAccount && participant.funded_breach_status === "breached"
+        if (isBreached && !isFundedRestart) throw new Error("TOPUP_RESTART_REQUIRED")
+        if (isFundedRestart && (!isBreached || !participant.payment_after_breach)) throw new Error("TOPUP_STALE_RESTART")
 
-  const creditedAmount = isInitialFundedTopUp ? fundedCredit : requestedFundingAmount
-  const newBalance = isChallengeUpgrade ? creditedAmount : Number(participant.account_balance || 0) + creditedAmount
+        const isChallengeUpgrade = participant.account_type === "challenge" && payment.payment_method === "funded_tier"
+        const isInitialFundedTopUp = payment.payment_method === "funded_tier"
+          && (isChallengeUpgrade || (isFundedAccount && !Number(participant.funded_initial_balance || 0) && Number(participant.account_balance || 0) <= 0))
+        const startsFundedPlan = isInitialFundedTopUp || isFundedRestart
+        const fundedPlan = FUNDED_PLANS.find((plan) => plan.topUpAmount === requestedFundingAmount)
+        if (startsFundedPlan && !fundedPlan) throw new Error("TOPUP_INVALID_FUNDED_TIER")
 
-        const fundedBaseAmount = isFundedAccount
-          ? getFundedBaseAmount(newBalance, participant.funded_amount || (isInitialFundedTopUp ? creditedAmount : undefined))
-          : 0
-        const remainsBelowLossLimit = isFundedAccount && newBalance <= getFundedMinimumBalance(fundedBaseAmount)
-        const revivalSql = `account_frozen = false, is_frozen = false, status = 'active', funded_breach_status = ${remainsBelowLossLimit ? "'breached'" : "'clear'"}`
+        const creditedAmount = startsFundedPlan ? fundedPlan!.baseAmount : requestedFundingAmount
+        const newBalance = isChallengeUpgrade || isFundedRestart ? creditedAmount : Number(participant.account_balance || 0) + creditedAmount
+        const fundedBaseAmount = startsFundedPlan ? creditedAmount : getFundedBaseAmount(newBalance, participant.funded_amount)
 
-  await client.query(
-  isFundedAccount || isChallengeUpgrade
-  ? `UPDATE participants
-  SET account_balance = $1,
-  account_type = CASE WHEN $3 THEN 'funded' ELSE account_type END,
-  challenge_status = CASE WHEN $5 THEN 'switched_to_funded' ELSE challenge_status END,
-  funded_initial_balance = CASE WHEN $3 THEN $1 ELSE funded_initial_balance END,
-  funded_amount = CASE WHEN $3 THEN $4 ELSE funded_amount END,
-  ${revivalSql}, updated_at = NOW()
-  WHERE id = $2`
-  : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
-  isFundedAccount || isChallengeUpgrade
-  ? [newBalance, payment.participant_id, isInitialFundedTopUp, fundedBaseAmount || creditedAmount, isChallengeUpgrade]
-  : [newBalance, payment.participant_id],
-  )
+        if (isFundedRestart) {
+          await client.query(
+            `UPDATE forex_trades SET status = 'cancelled', close_reason = 'account_breach',
+               close_time = COALESCE(close_time, NOW()::text), updated_at = NOW()
+             WHERE LOWER(participant_email) = LOWER($1) AND status IN ('open', 'pending')`,
+            [payment.participant_email],
+          )
+          await client.query(
+            `UPDATE predictions SET status = 'settled', result = 'cancelled', profit_loss = 0, closed_at = NOW()
+             WHERE LOWER(participant_email) = LOWER($1) AND balance_source = 'wallet' AND status IN ('pending', 'settling')`,
+            [payment.participant_email],
+          )
+        }
+
+        await client.query(
+          isFundedAccount || isChallengeUpgrade
+            ? `UPDATE participants SET account_balance = $1,
+                 account_type = CASE WHEN $3 THEN 'funded' ELSE account_type END,
+                 challenge_status = CASE WHEN $5 THEN 'switched_to_funded' ELSE challenge_status END,
+                 funded_initial_balance = CASE WHEN $3 THEN $1 ELSE funded_initial_balance END,
+                 funded_amount = CASE WHEN $3 THEN $4 ELSE funded_amount END,
+                 funded_breach_at = CASE WHEN $6 THEN NULL ELSE funded_breach_at END,
+                 funded_breach_balance = CASE WHEN $6 THEN NULL ELSE funded_breach_balance END,
+                 funded_breach_equity = CASE WHEN $6 THEN NULL ELSE funded_breach_equity END,
+                 is_active = CASE WHEN $6 THEN TRUE ELSE is_active END,
+                 account_frozen = false, is_frozen = false, status = 'active', funded_breach_status = 'clear', updated_at = NOW()
+               WHERE id = $2`
+            : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
+          isFundedAccount || isChallengeUpgrade
+            ? [newBalance, payment.participant_id, startsFundedPlan, fundedBaseAmount, isChallengeUpgrade, isFundedRestart]
+            : [newBalance, payment.participant_id],
+        )
 
         await client.query(
           `UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1
@@ -282,7 +299,7 @@ export async function POST(req: NextRequest) {
           creditedAmount,
           promoBonusAmount,
           isFundedAccount,
-          accountRevived: isFundedAccount && !remainsBelowLossLimit,
+          accountRevived: isFundedRestart,
           referrerEmail,
         }
       })
@@ -339,7 +356,9 @@ export async function POST(req: NextRequest) {
         TOPUP_PARTICIPANT_MISSING: { message: "Participant not found", status: 404 },
         TOPUP_CHALLENGE_ACCOUNT: { message: "Challenge accounts cannot receive standard wallet top-ups.", status: 403 },
         TOPUP_INVALID_AMOUNT: { message: "Invalid top-up amount", status: 400 },
-        TOPUP_INVALID_FUNDED_TIER: { message: "The first funded top-up must be $50, $100, $250, $500, or $1,000", status: 400 },
+        TOPUP_INVALID_FUNDED_TIER: { message: "The payment does not match a valid Funded plan fee.", status: 400 },
+        TOPUP_RESTART_REQUIRED: { message: "This account is breached. Only a new Funded restart plan payment can reactivate it.", status: 409 },
+        TOPUP_STALE_RESTART: { message: "This payment does not match the current funded account breach.", status: 409 },
       }
       const knownError = knownErrors[error.message]
       if (knownError) return NextResponse.json({ success: false, message: knownError.message }, { status: knownError.status })

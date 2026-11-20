@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect } from "react"
 import useSWR from "swr"
 import { ArrowUpRight, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,7 @@ async function fetchChallengeSummary(url: string) {
   return data
 }
 
-export function ChallengeStatusCard() {
+export function ChallengeStatusCard({ onStatusChange }: { onStatusChange?: (status: string, balance: number) => void }) {
   const { data } = useSWR("/api/participant/challenge", fetchChallengeSummary, {
     refreshInterval: 20_000,
     revalidateOnFocus: true,
@@ -24,9 +25,11 @@ export function ChallengeStatusCard() {
 
   const participant = data?.participant
   const plan = data?.plan
+  const status = participant?.challenge_status || "not_started"
+  useEffect(() => {
+    if (participant?.account_type === "challenge") onStatusChange?.(status, Number(participant.account_balance) || 0)
+  }, [onStatusChange, participant?.account_type, participant?.account_balance, status])
   if (!participant || participant.account_type !== "challenge") return null
-
-  const status = participant.challenge_status || "not_started"
   const metrics = data?.metrics
   const progress = Math.max(0, Math.min(100, Number(metrics?.progressPercent) || 0))
   const statusText = getChallengeStatusLabel(status)
@@ -65,7 +68,7 @@ export function ChallengeStatusCard() {
                     : status === "passed"
                       ? "Evaluation passed. Your account is ready for the next-stage review."
                       : status === "failed"
-                        ? "The evaluation has ended. Review your rule results and restart from the Challenge dashboard."
+                        ? "Your evaluation balance is $0.00. Choose a plan and submit a new fee to start again after approval."
                         : "Choose a plan, submit the Challenge fee, and start your evaluation."}
               </p>
             )}
@@ -79,8 +82,8 @@ export function ChallengeStatusCard() {
             )}
           </div>
           <Button asChild variant="outline" className="shrink-0 border-amber-300/30 bg-amber-300/5 text-amber-100 hover:bg-amber-300/10 hover:text-white">
-            <Link href="/participant/dashboard/challenge">
-              Open Challenge
+            <Link href={status === "failed" ? "/participant/dashboard/challenge#challenge-plans-heading" : "/participant/dashboard/challenge"}>
+              {status === "failed" ? "Restart Challenge" : "Open Challenge"}
               <ArrowUpRight data-icon="inline-end" />
             </Link>
           </Button>

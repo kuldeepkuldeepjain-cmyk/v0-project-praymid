@@ -1,5 +1,6 @@
 import "server-only"
 
+import type { PoolClient } from "pg"
 import { calculateChallengePnl } from "@/lib/challenge-account"
 import { getPool } from "@/lib/db"
 
@@ -12,6 +13,23 @@ export async function isChallengeAccount(email: unknown) {
     [email.trim()],
   )
   return result.rows[0]?.account_type === "challenge"
+}
+
+export async function failChallengeAccount(client: PoolClient, participant: { id: string; email: string }, equity: number | null = null) {
+  await client.query(
+    `UPDATE participants SET account_balance = 0, challenge_status = 'failed',
+       challenge_failed_at = COALESCE(challenge_failed_at, NOW()),
+       challenge_peak_equity = GREATEST(challenge_peak_equity, $2), updated_at = NOW()
+     WHERE id = $1 AND account_type = 'challenge'
+       AND (challenge_status = 'active' OR (challenge_status = 'failed' AND account_balance IS DISTINCT FROM 0))`,
+    [participant.id, equity],
+  )
+  await client.query(
+    `UPDATE forex_trades SET status = 'cancelled', close_reason = 'account_breach',
+       close_time = COALESCE(close_time, NOW()::text), updated_at = NOW()
+     WHERE LOWER(participant_email) = LOWER($1) AND status IN ('open', 'pending')`,
+    [participant.email],
+  )
 }
 
 export interface ChallengeRate {

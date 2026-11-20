@@ -113,32 +113,36 @@ export default function AddFundPage() {
         {isFundedAccountBreached && (
           <Alert variant="destructive" className="funding-error">
             <AlertCircle aria-hidden="true" />
-            <AlertTitle>Account reactivation required</AlertTitle>
-            <AlertDescription>Your funded account breached the 3% maximum drawdown rule and its balance was reset to $0.00. Add funds and request administrator reactivation.</AlertDescription>
+            <AlertTitle>Funded account breached</AlertTitle>
+            <AlertDescription>Your balance is $0.00. Choose a new Funded plan and pay its fee to restart after approval.</AlertDescription>
           </Alert>
         )}
 
         <div className="funding-landing-grid">
           <div className="flex min-w-0 flex-col gap-5">
-            <Link href="/participant/dashboard/upi" className="funding-gateway-link">
+            {!isFundedAccountBreached && <Link href="/participant/dashboard/upi" className="funding-gateway-link">
               <QrCode className="size-6 shrink-0 text-primary" aria-hidden="true" />
               <span className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="font-medium">EliteFund UPI Gateway</span>
                 <span className="text-sm leading-relaxed text-muted-foreground">Pay in INR with any UPI app and confirm your reference.</span>
               </span>
               <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-            </Link>
+            </Link>}
 
             {isFundedAccount && (
               <Card className="funding-panel">
                 <CardHeader>
-                  <div className="funding-plan-heading"><CardTitle><h2>Funded-tier funding</h2></CardTitle><Badge variant="outline">{canUseFundedTier ? "First deposit" : "Already used"}</Badge></div>
-                  <CardDescription>{canUseFundedTier ? "Choose a funded account tier in checkout. Available only for your first funded deposit." : "Funded-tier funding has already been used. Normal Add Fund is still available."}</CardDescription>
+                  <div className="funding-plan-heading"><CardTitle><h2>{isFundedAccountBreached ? "Restart your Funded account" : "Funded-tier funding"}</h2></CardTitle><Badge variant="outline">{isFundedAccountBreached ? "New payment" : canUseFundedTier ? "First deposit" : "Already used"}</Badge></div>
+                  <CardDescription>{isFundedAccountBreached ? "Pick any tier. Your new balance activates only after your new payment is approved." : canUseFundedTier ? "Choose a funded account tier in checkout. Available only for your first funded deposit." : "Funded-tier funding has already been used. Normal Add Fund is still available."}</CardDescription>
                 </CardHeader>
                 <CardFooter>
-                  <Button type="button" variant="outline" disabled={!canUseFundedTier} onClick={() => { setOpenFundedTier(true); setShowTopUpModal(true) }} className="h-12 w-full">
-                    <ShieldCheck data-icon="inline-start" />{canUseFundedTier ? "Funded-tier Fund" : "Funded-tier Fund Used"}
-                  </Button>
+                  {isFundedAccountBreached ? (
+                    <Button asChild className="h-12 w-full"><Link href="/participant/dashboard/add-funds?tier=1"><ShieldCheck data-icon="inline-start" />Choose a restart plan</Link></Button>
+                  ) : (
+                    <Button type="button" variant="outline" disabled={!canUseFundedTier} onClick={() => { setOpenFundedTier(true); setShowTopUpModal(true) }} className="h-12 w-full">
+                      <ShieldCheck data-icon="inline-start" />{canUseFundedTier ? "Funded-tier Fund" : "Funded-tier Fund Used"}
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             )}

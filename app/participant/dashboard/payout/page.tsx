@@ -364,7 +364,7 @@ export default function PayoutPage() {
         </section>
         <PayoutOverview walletBalance={walletBalance} isFundedAccount={isFundedAccount} fundedBaseAmount={fundedBaseAmount} maximumFundedPayout={maximumFundedPayout} history={payoutHistory} />
         {isFrozenFundedAccount && (
-          <Alert role="alert"><ShieldAlert aria-hidden="true" /><AlertTitle>Funded account breached</AlertTitle><AlertDescription><p>Trading, withdrawals, and all account functions are blocked until reactivation.</p><Button type="button" onClick={() => setShowTopUpModal(true)} className="payout-primary-action">Add funds to reactivate</Button></AlertDescription></Alert>
+          <Alert role="alert"><ShieldAlert aria-hidden="true" /><AlertTitle>Funded account breached</AlertTitle><AlertDescription><p>Your trading balance is $0.00. Trading and withdrawals remain disabled until your new plan payment is approved.</p><Button asChild className="payout-primary-action"><Link href="/participant/dashboard/add-funds?tier=1">Restart Funded account</Link></Button></AlertDescription></Alert>
         )}
         {hasActivePayout && (
           <Alert role="status"><Clock3 aria-hidden="true" /><AlertTitle>A withdrawal is already in progress</AlertTitle><AlertDescription><p>You can place another request after your current withdrawal is completed. Your progress and transfer details are below.</p><a href={`#${historyId}`} className="text-primary underline underline-offset-4">View your active withdrawal</a></AlertDescription></Alert>

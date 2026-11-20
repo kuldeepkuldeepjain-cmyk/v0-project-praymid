@@ -88,6 +88,7 @@ export function DesktopDashboardNavigation() {
     <>
       <nav
         aria-label="Mobile dashboard navigation"
+        data-participant-mobile-navigation=""
         className={cn(
           "fixed inset-x-3 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-50 overflow-hidden rounded-2xl border shadow-[0_18px_50px_rgba(0,0,0,0.38)] md:hidden",
           (!isMobileNavigationVisible || terminalActive) && "hidden",

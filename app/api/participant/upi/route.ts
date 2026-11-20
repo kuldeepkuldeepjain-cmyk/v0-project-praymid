@@ -85,15 +85,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "This UPI reference has already been submitted" }, { status: 409 })
     }
 
-    const participants = await query<{ id: string; email: string }>(
-      "SELECT id, email FROM participants WHERE LOWER(email) = $1 LIMIT 1",
-      [auth.email.toLowerCase().trim()],
+    const participants = await query<{ id: string; email: string; account_type: string; funded_breach_status: string }>(
+      "SELECT id, email, account_type, funded_breach_status FROM participants WHERE id = $1",
+      [auth.participantId],
     )
     if (participants.length === 0) {
       return NextResponse.json({ success: false, message: "Participant account not found" }, { status: 404 })
     }
 
     const participant = participants[0]
+    if (participant.account_type === "challenge" || (participant.account_type === "funded" && participant.funded_breach_status === "breached")) {
+      return NextResponse.json({ success: false, message: "Use your plan checkout to submit a new payment." }, { status: 409 })
+    }
     const payableAmount = Number(amountUsd.toFixed(2))
 
     await query(

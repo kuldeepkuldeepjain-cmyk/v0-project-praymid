@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { MobileChartIndicators, type ChartIndicatorKey as IndicatorKey } from "@/components/mobile-chart-indicators"
+import { TradingChartPriceScale } from "@/components/trading-chart-price-scale"
 import mobileControlsStyles from "./mobile-terminal-controls.module.css"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { decimals as instrumentDecimals } from "@/lib/forex-instruments"
@@ -11,7 +12,10 @@ import {
   CandlestickSeries,
   LineSeries,
   HistogramSeries,
+  type AutoscaleInfoProvider,
   type IChartApi,
+  type IPriceScaleApi,
+  type IRange,
   type ISeriesApi,
   type CandlestickData,
   type LineData,
@@ -159,6 +163,16 @@ function toTimestamp(c: Candle | null | undefined, idx: number, tfSeconds = 300)
   return 1704067200 + idx * tfSeconds
 }
 
+function zoomPriceRange(scale: IPriceScaleApi, range: IRange<number>, factor: number, tickSize: number) {
+  const halfSpan = (range.to - range.from) / 2
+  if (halfSpan <= 0) return
+  const center = range.from + halfSpan
+  const zoomedHalfSpan = Math.max(tickSize * 2, halfSpan * factor)
+  const from = center - zoomedHalfSpan
+  const to = center + zoomedHalfSpan
+  if (Number.isFinite(from) && Number.isFinite(to) && from < to) scale.setVisibleRange({ from, to })
+}
+
 // ─── TradingChart ─────────────────────────────────────────────────────────────
 
 export function TradingChart({
@@ -220,6 +234,7 @@ export function TradingChart({
   })
   const [chartPane, setChartPane] = useState<"rsi" | "macd" | "none">("rsi")
   const [crosshairActive, setCrosshairActive] = useState(false)
+  const [priceAxisVisible, setPriceAxisVisible] = useState(true)
 
   // Price alerts ─────���──────────────────��────────────────────────────────────
   const [alerts, setAlerts]             = useState<PriceAlert[]>([])
@@ -585,9 +600,43 @@ export function TradingChart({
     const touchEventTypes = ["touchstart", "touchmove", "touchend", "touchcancel"] as const
     touchEventTypes.forEach((type) => layer.addEventListener(type, forwardTouchEvent, { passive: false }))
 
-    // The chart engine preventDefaults every touchmove it sees, which freezes page
-    // scrolling on Android. Vertical swipes are kept away from it so the page scrolls.
+    let axisDrag: { touchId: number; startY: number; range: IRange<number>; zooming: boolean } | null = null
+
+    // Only drags starting on the price labels adjust the price range. Vertical
+    // swipes on the plot still scroll the terminal on touch devices.
     const gateVerticalSwipe = (event: TouchEvent) => {
+      const chart = chartRef.current
+      if (!axisDrag && chart && event.type === "touchstart" && event.touches.length === 1
+        && (event.target === layer || event.target instanceof HTMLCanvasElement)) {
+        const touch = event.touches[0]
+        const bounds = chart.chartElement().getBoundingClientRect()
+        const scale = chart.priceScale("right")
+        const axisWidth = scale.width()
+        const paneY = touch.clientY - bounds.top
+        if (axisWidth > 0 && touch.clientX >= bounds.right - axisWidth && touch.clientX < bounds.right
+          && paneY >= 0 && paneY < chart.paneSize(0).height) {
+          const range = scale.getVisibleRange()
+          if (range) axisDrag = { touchId: touch.identifier, startY: touch.clientY, range, zooming: false }
+        }
+      }
+      if (axisDrag) {
+        event.stopPropagation()
+        if (event.type === "touchcancel" || event.touches.length === 0) axisDrag = null
+        if (event.type === "touchmove") {
+          if (event.cancelable) event.preventDefault()
+          const touch = event.touches[0]
+          if (chart && axisDrag && event.touches.length === 1 && touch.identifier === axisDrag.touchId) {
+            const delta = touch.clientY - axisDrag.startY
+            if (axisDrag.zooming || Math.abs(delta) >= 3) {
+              axisDrag.zooming = true
+              const factor = Math.exp(Math.max(-3, Math.min(3, delta / 120)))
+              zoomPriceRange(chart.priceScale("right"), axisDrag.range, factor, 10 ** -dec)
+            }
+          }
+        }
+        return
+      }
+
       if (event.touches.length > 1) {
         gesture = "horizontal"
         return
@@ -633,7 +682,7 @@ export function TradingChart({
 
     const gateEventTypes = ["touchstart", "touchmove", "touchend", "touchcancel"] as const
     gateEventTypes.forEach((type) =>
-      chartContainer.addEventListener(type, gateVerticalSwipe, { capture: true, passive: true }),
+      chartContainer.addEventListener(type, gateVerticalSwipe, { capture: true, passive: false }),
     )
 
     return () => {
@@ -642,7 +691,7 @@ export function TradingChart({
         chartContainer.removeEventListener(type, gateVerticalSwipe, { capture: true }),
       )
     }
-  }, [darkTheme])
+  }, [darkTheme, dec])
 
   // ── Update candle + volume data ──────────────────────────────────────────────
   useEffect(() => {
@@ -754,22 +803,45 @@ export function TradingChart({
     const width = containerRef.current?.clientWidth ?? 900
     const visibleBars = Math.max(36, Math.min(96, candleData.length || 36))
     const spacing = Math.max(4, Math.min(14, width / visibleBars * 0.72))
-    chart.timeScale().applyOptions({ barSpacing: spacing, minBarSpacing: 3, rightOffset: Math.max(4, Math.round(visibleBars * 0.06)) })
-    series.applyOptions({
-      // Keep the primary price axis bounded by the selected instrument's
-      // recent OHLC range. Volume/RSI/MACD use isolated hidden scales below.
-      autoscaleInfoProvider: () => ({ priceRange: { minValue: priceEnvelope.min, maxValue: priceEnvelope.max } }),
-    })
-    chart.priceScale("right").applyOptions({
-      autoScale: !userAdjustedViewRef.current,
-      scaleMargins: { top: 0.08, bottom: indicators.volume ? 0.16 : 0.06 },
-      mode: 0,
-    })
-    if (candleData.length > 0 && candleCountRef.current === candleData.length && !userAdjustedViewRef.current) {
+    // Keep the default recent-market framing, but fit the visible candles when viewing history.
+    const autoscaleInfoProvider: AutoscaleInfoProvider = (original) => userAdjustedViewRef.current
+      ? original()
+      : { priceRange: { minValue: priceEnvelope.min, maxValue: priceEnvelope.max } }
+    series.applyOptions({ autoscaleInfoProvider })
+    if (candleCountRef.current === candleData.length && !userAdjustedViewRef.current) {
+      const rightOffset = Math.max(4, Math.round(visibleBars * 0.06))
       autoFitRequestedRef.current = true
-      chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, candleData.length - visibleBars), to: candleData.length + Math.max(4, Math.round(visibleBars * 0.06)) })
+      chart.timeScale().applyOptions({ barSpacing: spacing, minBarSpacing: 3, rightOffset })
+      autoFitRequestedRef.current = true
+      chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, candleData.length - visibleBars), to: candleData.length + rightOffset })
     }
-  }, [priceEnvelope, candleData.length, indicators.volume])
+  }, [priceEnvelope, candleData.length])
+
+  useEffect(() => {
+    chartRef.current?.applyOptions({
+      rightPriceScale: {
+        visible: priceAxisVisible,
+        scaleMargins: { top: 0.08, bottom: indicators.volume ? 0.16 : 0.06 },
+      },
+    })
+  }, [darkTheme, priceAxisVisible, indicators.volume])
+
+  const zoomPriceAxis = (factor: number) => {
+    const scale = chartRef.current?.priceScale("right")
+    const range = scale?.getVisibleRange()
+    if (scale && range) zoomPriceRange(scale, range, factor, 10 ** -dec)
+  }
+
+  const autoFitPriceAxis = () => chartRef.current?.priceScale("right").setAutoScale(true)
+  const priceScaleControls = (
+    <TradingChartPriceScale
+      visible={priceAxisVisible}
+      hasData={candleData.length > 0}
+      onToggleVisible={() => setPriceAxisVisible((visible) => !visible)}
+      onZoom={zoomPriceAxis}
+      onAutoFit={autoFitPriceAxis}
+    />
+  )
 
   // Live BID/ASK remains visible in the terminal header and order panel.
   // The price pane stays clean: no quote or open-trade labels are drawn over candles.
@@ -906,7 +978,7 @@ export function TradingChart({
               if (!chartRef.current || candleData.length === 0) return
               userAdjustedViewRef.current = false
               autoFitRequestedRef.current = true
-              chartRef.current.priceScale("right").applyOptions({ autoScale: true })
+              autoFitPriceAxis()
               const from = Math.max(0, candleData.length - 90)
               chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
             }}
@@ -920,6 +992,7 @@ export function TradingChart({
               <circle cx="5" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
             </svg>
           </button>
+          {priceScaleControls}
           {onExpand && (
             <button
               type="button"
@@ -1020,6 +1093,7 @@ export function TradingChart({
         </div>
 
         <div className="indicator-pane-controls flex shrink-0 items-center gap-2" role="group" aria-label="Chart studies">
+          {!actionsHost && priceScaleControls}
           <span className="text-[8px] font-black tracking-[0.16em]" style={{ color: "#8296ab" }}>PANE</span>
           <span aria-hidden="true" className="h-3 w-px shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
           {([
@@ -1187,7 +1261,7 @@ export function TradingChart({
         <div
           ref={gestureLayerRef}
           aria-hidden="true"
-          className="mobile-chart-scroll-layer absolute inset-0 md:hidden"
+          className="mobile-chart-scroll-layer absolute inset-0 pointer-fine:pointer-events-none md:hidden"
           style={{ zIndex: 5, background: "transparent", touchAction: "pan-y" }}
         />
       </div>

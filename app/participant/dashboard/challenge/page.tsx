@@ -294,7 +294,7 @@ function ChallengeContent() {
             <section aria-labelledby="challenge-plans-heading" className="flex flex-col gap-4">
               <div>
                 <h2 id="challenge-plans-heading" className="text-lg font-semibold text-white">{status === "failed" ? "Start a new evaluation" : status === "payment_rejected" ? "Resubmit your Challenge fee" : "Choose a Challenge plan"}</h2>
-                <p className="mt-1 text-sm leading-6 text-slate-400">The fee is paid separately. Approval activates the selected virtual balance; it is not a wallet deposit.</p>
+                <p className="mt-1 text-sm leading-6 text-slate-400">{status === "failed" ? "Your previous evaluation ended and its balance is $0.00. Choose any plan and pay its fee again. Your new evaluation starts only after approval." : "The fee is paid separately. Approval activates the selected virtual balance; it is not a wallet deposit."}</p>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 {plans.map((item) => (

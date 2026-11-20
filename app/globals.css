@@ -522,7 +522,7 @@
   .mobile-dashboard-add-funds > span { background: transparent !important; color: inherit !important; border-color: transparent !important; box-shadow: none !important; font-size: 14px; }
   .mobile-dashboard-trade { border: 1px solid var(--terminal-graphite-border); background: var(--terminal-graphite-surface) !important; color: var(--terminal-graphite-text) !important; box-shadow: none !important; }
   .mobile-dashboard-trade:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
-  .terminal-page:has(.funding-checkout-page, .payout-review-page) .participant-global-mobile-nav { display: none; }
+  .terminal-page:has(.funding-checkout-page, .payout-review-page) :is(.participant-global-mobile-nav, [data-participant-mobile-navigation]) { display: none; }
   /* Target the content hook, not an escaped responsive utility class. */
   .terminal-page:has(.funding-checkout-page, .payout-review-page) main.participant-dashboard-content { padding-bottom: 0; }
   .funding-checkout-page .funding-checkout-header { padding-top: max(20px, env(safe-area-inset-top, 0px)); }
