@@ -1,7 +1,10 @@
 import { getIronSession, IronSession } from "iron-session"
 import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
-import { execute } from "@/lib/db"
+import { randomUUID } from "node:crypto"
+import { isIP } from "node:net"
+import { execute, withTransaction } from "@/lib/db"
+import type { SecurityContext } from "@/lib/security"
 
 // ── Session data shapes ────────────────────────────────────────────────────
 
@@ -68,6 +71,22 @@ export async function setParticipantSession(data: ParticipantSessionData): Promi
   if (data.lastActivityAt) session.lastActivityAt = data.lastActivityAt
   session.isLoggedIn = true
   await session.save()
+}
+
+export async function startParticipantLogin(participant: { id: string; email: string }, context: SecurityContext): Promise<void> {
+  const sessionId = randomUUID()
+  const ipAddress = context.ipAddress && isIP(context.ipAddress) ? context.ipAddress : null
+
+  await withTransaction(async (client) => {
+    await client.query("UPDATE participants SET last_login = NOW(), last_seen = NOW(), updated_at = NOW() WHERE id = $1", [participant.id])
+    await client.query("UPDATE participant_sessions SET is_active = false, last_activity = NOW() WHERE participant_id = $1 AND is_active = true", [participant.id])
+    await client.query(
+      `INSERT INTO participant_sessions (id, participant_id, participant_email, token, device_fingerprint, ip_address, user_agent)
+       VALUES ($1::uuid, $2::uuid, $3, $4::text, $5, $6::inet, $7)`,
+      [sessionId, participant.id, participant.email, sessionId, context.deviceHash, ipAddress, context.userAgent],
+    )
+  })
+  await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant", sessionId, lastActivityAt: Date.now() })
 }
 
 export async function clearParticipantSession(): Promise<void> {

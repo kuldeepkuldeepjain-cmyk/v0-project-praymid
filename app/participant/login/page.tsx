@@ -67,6 +67,8 @@ export default function ParticipantLoginPage() {
           created_at: data.created_at, is_frozen: data.is_frozen, total_earnings: data.total_earnings || 0,
           rank: data.rank || "bronze", is_active: data.is_active !== false, serial_number: data.serial_number || "",
           status: data.status || "active", pinConfigured: data.pinConfigured === true,
+          account_type: data.account_type, funded_breach_status: data.funded_breach_status,
+          account_frozen: data.account_frozen,
         }
         setParticipantAuth(
           data.participantId || `user-${Date.now()}`, data.walletAddress || data.bep20_address || "",

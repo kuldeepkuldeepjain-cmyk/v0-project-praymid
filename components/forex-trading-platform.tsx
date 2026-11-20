@@ -1832,7 +1832,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       onAccountFrozen?.()
     } catch {
       freezeRequestStarted.current = false
-      showToast("error", "Could not freeze the account automatically. Please refresh and try again.")
+      showToast("error", "Could not confirm the funded plan breach. Please refresh and try again.")
     }
   }, [accountEquity, fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, onBalanceUpdated, participantEmail, showToast])
 
@@ -2483,7 +2483,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   }
 
   const executeTrade = (tradeDirection: TradeDirection = direction) => {
-    if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
+    if (tradingLocked) { showToast("warning", "Trading is disabled for this plan"); return }
     if (!selectedPair) return
     if (!hasFreshRate(selectedPair.symbol)) { showToast("warning", "Waiting for a fresh live quote for this instrument."); return }
     const lot = parseFloat(lotSize); const lev = effectiveLeverage
@@ -2576,7 +2576,7 @@ const maxLeverage = 100
 
   const confirmAndPlace = async () => {
     if (confirmInFlight.current || confirmLoading) return
-    if (tradingLocked) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
+    if (tradingLocked) { setTradeConfirm(null); showToast("warning", "Trading is disabled for this plan"); return }
     if (!tradeConfirm || !selectedPair) return
     confirmInFlight.current = true
     setConfirmLoading(true)
@@ -2706,7 +2706,7 @@ const maxLeverage = 100
 
   // ��─ Quick trade — routes through confirmation modal ────────��──���───────────��
   const quickTrade = (dir: TradeDirection) => {
-  if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
+  if (tradingLocked) { showToast("warning", "Trading is disabled for this plan"); return }
   if (!selectedPair) return
   if (!hasFreshRate(selectedPair.symbol)) { showToast("warning", "Waiting for a fresh live quote for this instrument."); return }
   if (!balanceLoaded) { showToast("info", "Loading account balance — try again in a moment"); return }
@@ -2857,7 +2857,7 @@ const maxLeverage = 100
 
   // ── Funded account breach ───────��────���──────────���────────────���─────────────
   // When the drawdown limit is breached, every open position is force-closed
-  // (booking whatever loss/gain it currently holds), the account is frozen,
+  // (booking whatever loss/gain it currently holds), the funded plan is locked,
   // and the trader is shown a clear breach notice.
   const breachHandledRef = useRef(false)
   const handleFundedBreach = useCallback(() => {
@@ -5231,7 +5231,7 @@ const maxLeverage = 100
                 Funded Account Breached
               </h2>
               <p className="text-[13px] leading-relaxed text-slate-400 mb-6 text-pretty">
-                {"Your drawdown exceeded the funded account's risk limit. All open positions have been force-closed and the account is now frozen pending review."}
+                You reached the funded plan&apos;s drawdown limit. You can still sign in and use your dashboard, but this plan cannot place new trades. To resume trading, start a new funded plan.
               </p>
 
               <div className="grid grid-cols-2 gap-3 w-full mb-6">
