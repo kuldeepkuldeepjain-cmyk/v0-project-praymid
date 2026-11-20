@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
       }
       if (rows[0].account_type === "funded" && alreadyBreached && delta < 0 && isMarginLock) {
         await client.query("ROLLBACK")
-        return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation." }, { status: 403 })
+        return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Choose a new plan and submit payment to restart trading." }, { status: 403 })
       }
 
       const newBalance = parseFloat((currentBalance + delta).toFixed(2))

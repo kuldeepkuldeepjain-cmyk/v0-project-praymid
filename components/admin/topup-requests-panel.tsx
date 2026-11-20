@@ -498,7 +498,7 @@ export function TopUpRequestsPanel() {
                       { label: "Funding requested", value: `$${(Number(selectedRequest.amount) + Number(selectedRequest.promo_bonus_amount)).toFixed(2)}` },
                     ] : []),
                     { label: "Submitted", value: new Date(selectedRequest.created_at).toLocaleString() },
-                    { label: "Payment Method", value: isInrChallengePayment(selectedRequest) ? "UPI (INR)" : ["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "EliteFund UPI" : selectedRequest.payment_method === "funded_tier" ? "Funded-tier payment" : "Crypto" },
+                    { label: "Payment Method", value: isInrChallengePayment(selectedRequest) ? "UPI (INR)" : ["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "EliteFund UPI" : selectedRequest.payment_method === "funded_restart" ? "Funded restart plan" : selectedRequest.payment_method === "funded_tier" ? "Funded-tier payment" : "Crypto" },
                     ...(selectedRequest.reviewed_at ? [
                       { label: "Reviewed At", value: new Date(selectedRequest.reviewed_at).toLocaleString() },
                       { label: "Reviewed By", value: selectedRequest.reviewed_by_email || "—" },

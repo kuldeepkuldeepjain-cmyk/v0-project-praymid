@@ -1730,8 +1730,12 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
     : 0
   const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
   const isFundedAccountBreached = isFundedAccount && participantData?.funded_breach_status === "breached"
-  // Funding is always available from Add Fund. Breached funded accounts can
-  // be reactivated through an explicit button, never an automatic popup.
+  const syncChallengeStatus = useCallback((status: string, balance: number) => {
+    setParticipantData((current: any) => {
+      if (!current || (current.challenge_status === status && (status !== "failed" || Number(current.account_balance) === 0))) return current
+      return { ...current, challenge_status: status, account_balance: balance }
+    })
+  }, [])
 
   useEffect(() => {
   // Funded accounts use the 3% maximum drawdown breach state, not the normal
@@ -1798,7 +1802,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
   return (
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
-      {isChallengeAccount && <ChallengeStatusCard />}
+      {isChallengeAccount && <ChallengeStatusCard onStatusChange={syncChallengeStatus} />}
       {isFundedAccount && fundedDrawdownSnapshot && (
         <div
           className="mx-3 mt-3 hidden rounded-2xl border p-3.5 text-xs text-slate-200 shadow-lg shadow-black/20 sm:mx-4 sm:mt-4 sm:p-4 md:block"
@@ -1841,22 +1845,16 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </strong>
             </div>
           </div>
-          {fundedDrawdownSnapshot.status === "BREACHED" && (
-            <div className="mt-4 flex flex-col gap-3 rounded-lg border border-red-400/20 bg-red-500/10 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs leading-5 text-red-100">The funded balance is $0.00 after breach. Trading and payouts are disabled; add funds and request administrator reactivation.</p>
-              <Button
-                type="button"
-                onClick={() => {
-                  setTopUpIsFundedAccount(true)
-                  setShowTopUpModal(true)
-                }}
-                className="shrink-0 bg-red-500 text-white hover:bg-red-400"
-              >
-                Add funds to reactivate
-              </Button>
-            </div>
-          )}
         </div>
+      )}
+      {isFundedAccountBreached && (
+        <section aria-label="Funded account breach" className="mx-3 mt-3 flex flex-col gap-3 rounded-xl border border-red-400/30 bg-slate-950 p-4 text-slate-100 sm:mx-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold">Funded account breached</h2>
+            <p className="mt-1 text-sm text-slate-300">Your trading balance is $0.00. Select a new plan and pay its fee to restart after approval.</p>
+          </div>
+          <Button asChild className="shrink-0"><Link href="/participant/dashboard/add-funds?tier=1">Restart Funded account</Link></Button>
+        </section>
       )}
 
       {showPinSetup && participantData && (
@@ -1985,18 +1983,13 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               <ChevronDown aria-hidden="true" className="participant-header-balance-chevron h-3 w-3 shrink-0 text-slate-400" />
             </button>
             {isFundedAccountBreached && (
-              <button
-                type="button"
-                onClick={() => {
-                  setTopUpIsFundedAccount(true)
-                  setShowTopUpModal(true)
-                }}
+              <Link href="/participant/dashboard/add-funds?tier=1"
                 className="hidden h-8 items-center gap-1 rounded-lg border border-red-400/30 bg-red-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-red-200 transition-colors hover:bg-red-500/25 active:scale-95 md:flex"
-                aria-label="Add funds to reactivate breached account"
+                aria-label="Restart Funded account"
               >
-                <Plus className="h-3 w-3" />
-                <span className="hidden md:inline">Reactivate</span>
-              </button>
+                <Plus className="h-3 w-3" aria-hidden="true" />
+                <span className="hidden md:inline">Restart</span>
+              </Link>
             )}
             {!isChallengeAccount && (
               <Link href="/participant/dashboard/payout" aria-label="Open payout" className="hidden md:inline-flex">
@@ -2484,7 +2477,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   setParticipantData((prev: any) => {
   if (!prev) return prev
   const updated = isFundedAccount
-  ? { ...prev, funded_breach_status: "breached" }
+  ? { ...prev, funded_breach_status: "breached", account_balance: 0 }
   : { ...prev, account_frozen: true, is_frozen: true, status: "frozen" }
   try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
   return updated
@@ -2494,7 +2487,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   onBalanceUpdated={(newBalance) => {
                   setParticipantData((prev: any) => {
                     if (!prev) return prev
-                    const updated = { ...prev, account_balance: newBalance }
+                    const locked = prev.funded_breach_status === "breached" || prev.challenge_status === "failed"
+                    const updated = { ...prev, account_balance: locked ? 0 : newBalance }
                     try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
                     return updated
                   })

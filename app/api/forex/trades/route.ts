@@ -3,7 +3,7 @@ import { getPool } from "@/lib/db"
 import { PAIRS_CONFIG } from "@/lib/forex-instruments"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { calculateChallengeMargin, calculateChallengePnl, getChallengePlan, getChallengeSnapshot } from "@/lib/challenge-account"
-import { getChallengeExecutionPrice, getChallengeOpenPositionPnl, getLiveChallengeRates } from "@/lib/challenge-account-server"
+import { failChallengeAccount, getChallengeExecutionPrice, getChallengeOpenPositionPnl, getLiveChallengeRates } from "@/lib/challenge-account-server"
 import {
   getFundedBaseAmount,
   getFundedSingleTradeLossLimit,
@@ -266,7 +266,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (participant?.account_type === "funded" && participant?.funded_breach_status === "breached" && action !== "partial_close") {
-      return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation." }, { status: 403 })
+      return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Choose a new plan and submit payment to restart trading." }, { status: 403 })
     }
 
     if (action === "open") {
@@ -286,7 +286,7 @@ export async function POST(req: NextRequest) {
         const account = accountResult.rows[0]
         if (!account) throw Object.assign(new Error("Participant account was not found"), { status: 404 })
         if (account.account_type === "funded" && account.funded_breach_status === "breached") {
-          throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation."), { status: 403 })
+          throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Choose a new plan and submit payment to restart trading."), { status: 403 })
         }
         if (account.account_type === "funded") {
           const fundedInitial = Number(account.funded_initial_balance) || getFundedBaseAmount(account.account_balance, account.funded_amount)
@@ -337,17 +337,7 @@ export async function POST(req: NextRequest) {
           const tradingDays = (Number(account.challenge_trading_days) || 0) + (isNewTradingDay ? 1 : 0)
           const snapshot = getChallengeSnapshot(accountChallengePlan, equityBefore, dayStartEquity, tradingDays, "active")
           if (snapshot.breached) {
-            await client.query(
-              `UPDATE participants SET challenge_status = 'failed', challenge_failed_at = NOW(),
-                 challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $1), $1), updated_at = NOW()
-               WHERE id = $2`,
-              [equityBefore, account.id],
-            )
-            await client.query(
-              `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
-               WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
-              [participant_email],
-            )
+            await failChallengeAccount(client, { id: account.id, email: participant_email }, equityBefore)
             await client.query("COMMIT")
             return NextResponse.json({ success: false, error: "Challenge loss limit reached. The evaluation is now failed." }, { status: 403 })
           }
@@ -443,7 +433,7 @@ export async function POST(req: NextRequest) {
         if (!account) throw Object.assign(new Error("Participant account was not found"), { status: 404 })
         if (account.account_type === "funded") {
           if (account.funded_breach_status === "breached") {
-            throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation."), { status: 403 })
+            throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Choose a new plan and submit payment to restart trading."), { status: 403 })
           }
           const fundedInitial = Number(account.funded_initial_balance) || getFundedBaseAmount(account.account_balance, account.funded_amount)
           const risk = trade.sl === null || trade.sl === undefined
@@ -499,6 +489,7 @@ export async function POST(req: NextRequest) {
       const client = await db.connect()
       try {
         await client.query("BEGIN")
+        await client.query("SELECT id FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE", [participant_email])
         const existingClose = await client.query(
           `SELECT participant_email, status, close_price, close_time, close_duration,
                   final_pnl, final_pips, final_swap
@@ -567,7 +558,8 @@ export async function POST(req: NextRequest) {
           if (!participant) throw new Error("Participant account was not found")
           const balanceBefore = Number(participant.account_balance) || 0
           const settlement = Number((closedMargin + calculated.pnl).toFixed(2))
-          const balanceAfter = Number((balanceBefore + settlement).toFixed(2))
+          if (participant.challenge_status !== "active") throw Object.assign(new Error("Challenge trading is not active."), { status: 403 })
+          let balanceAfter = Number((balanceBefore + settlement).toFixed(2))
 
           const preClosePositionsResult = await client.query(
             `SELECT pair, direction, lot_size, open_price FROM forex_trades
@@ -646,7 +638,10 @@ export async function POST(req: NextRequest) {
                WHERE id = $7`,
               [balanceAfter, challengeStatus, nextDayStart, nextTradingDays, today, Math.max(Number(participant.challenge_peak_equity) || 0, currentEquity), participant.id],
             )
-            if (challengeStatus !== "active") {
+            if (challengeStatus === "failed") {
+              await failChallengeAccount(client, { id: participant.id, email: participant_email })
+              balanceAfter = 0
+            } else if (challengeStatus === "passed") {
               await client.query(
                 `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
                  WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
@@ -830,7 +825,7 @@ export async function PATCH(req: NextRequest) {
     const isChallengeAccount = accountRuleResult.rows[0]?.account_type === "challenge"
     const isFundedAccount = accountRuleResult.rows[0]?.account_type === "funded"
     if (isFundedAccount && accountRuleResult.rows[0]?.funded_breach_status === "breached" && action !== "close") {
-      return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation." }, { status: 403 })
+      return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Choose a new plan and submit payment to restart trading." }, { status: 403 })
     }
     if (isChallengeAccount && action !== "close" && accountRuleResult.rows[0]?.challenge_status !== "active") {
       return NextResponse.json({ success: false, error: "Challenge trading is not active." }, { status: 403 })
@@ -855,6 +850,7 @@ export async function PATCH(req: NextRequest) {
       const client = await db.connect()
       try {
         await client.query("BEGIN")
+        await client.query("SELECT id FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE", [participant_email])
         const existingTrade = await client.query(
           `SELECT participant_id, participant_email, pair, direction, lot_size, leverage,
                   open_price, margin, swap, open_timestamp, close_price, close_time, close_duration,
@@ -949,7 +945,8 @@ export async function PATCH(req: NextRequest) {
             || closeReason === "account_breach"
             || isFundedDrawdownBreached(participant.account_type, fundedInitial, candidateBalanceAfter, Number(remainingMarginResult.rows[0]?.amount) || 0)
         }
-        const balanceAfter = fundedAccount && fundedBreach ? 0 : candidateBalanceAfter
+        if (isChallengeAccount && participant.challenge_status !== "active") throw Object.assign(new Error("Challenge trading is not active."), { status: 403 })
+        let balanceAfter = fundedAccount && fundedBreach ? 0 : candidateBalanceAfter
         if (candidateBalanceAfter < 0 && !isChallengeAccount && !fundedAccount) throw new Error("Insufficient balance for trade settlement")
 
         let challengeStatus = participant.challenge_status
@@ -999,7 +996,10 @@ export async function PATCH(req: NextRequest) {
                WHERE id = $7`,
               [balanceAfter, challengeStatus, dayStartEquity, tradingDays, today, Math.max(Number(participant.challenge_peak_equity) || 0, challengeEquity), participant.id],
             )
-            if (challengeStatus !== "active") {
+            if (challengeStatus === "failed") {
+              await failChallengeAccount(client, { id: participant.id, email: participant_email })
+              balanceAfter = 0
+            } else if (challengeStatus === "passed") {
               await client.query(
                 `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
                  WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
@@ -1114,6 +1114,7 @@ export async function PATCH(req: NextRequest) {
         const client = await db.connect()
         try {
           await client.query("BEGIN")
+          await client.query("SELECT id FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE", [participant_email])
           const pendingResult = await client.query(
             `SELECT id, pair, direction, lot_size, leverage, sl, tp, order_type, target_price, open_price, margin, status FROM forex_trades
              WHERE id = $1 AND LOWER(participant_email) = LOWER($2) FOR UPDATE`,
@@ -1196,16 +1197,7 @@ export async function PATCH(req: NextRequest) {
           const tradingDays = (Number(participant.challenge_trading_days) || 0) + (isNewTradingDay ? 1 : 0)
           const snapshot = getChallengeSnapshot(challengePlan, equityBefore, dayStartEquity, tradingDays, "active")
           if (snapshot.breached) {
-            await client.query(
-              `UPDATE participants SET challenge_status = 'failed', challenge_failed_at = NOW(), updated_at = NOW()
-               WHERE id = $1`,
-              [participant.id],
-            )
-            await client.query(
-              `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
-               WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
-              [participant_email],
-            )
+            await failChallengeAccount(client, { id: participant.id, email: participant_email }, equityBefore)
             await client.query("COMMIT")
             return NextResponse.json({ success: false, error: "Challenge loss limit reached. The evaluation is now failed." }, { status: 403 })
           }
@@ -1254,7 +1246,7 @@ export async function PATCH(req: NextRequest) {
             throw Object.assign(new Error("Funded account was not found."), { status: 404 })
           }
           if (account.funded_breach_status === "breached") {
-            throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation."), { status: 403 })
+            throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Choose a new plan and submit payment to restart trading."), { status: 403 })
           }
           const pendingResult = await client.query(
             `SELECT id, pair, direction, lot_size, leverage, sl, tp, order_type, target_price, open_price, margin, status FROM forex_trades

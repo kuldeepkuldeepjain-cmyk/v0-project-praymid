@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { query, execute, withTransaction } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { uploadBase64ToR2 } from "@/lib/cloudflare-r2"
+import { FUNDED_PLANS } from "@/lib/funded-account"
 
 export async function GET(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -64,8 +65,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ success: false, message: "Challenge accounts can only submit an Instant Funded plan payment." }, { status: 403 })
   }
 
-    if (requestedFundingMode === "funded" && ![50, 100, 250, 500, 1000].includes(requestedAmount)) {
-      return NextResponse.json({ success: false, message: "The first funded top-up must be $50, $100, $250, $500, or $1,000" }, { status: 400 })
+    if (requestedFundingMode === "funded" && !FUNDED_PLANS.some((plan) => plan.topUpAmount === requestedAmount)) {
+      return NextResponse.json({ success: false, message: "Choose a valid Funded plan." }, { status: 400 })
     }
     const normalizedPromoCode = String(promoCode || "").trim().toUpperCase().replace(/\s+/g, "")
     if (normalizedPromoCode && !/^[A-Z0-9_-]{3,32}$/.test(normalizedPromoCode)) {
@@ -119,16 +120,6 @@ export async function POST(request: NextRequest) {
     }
     const payableAmount = Number((requestedAmount - promoBonusAmount).toFixed(2))
 
-    if (requestedFundingMode === "funded") {
-      const priorFundingRequests = await query(
-        "SELECT id FROM topup_requests WHERE participant_id = $1 AND payment_method = 'funded_tier' LIMIT 1",
-        [participant.id]
-      ) as any[]
-      if (priorFundingRequests.length > 0) {
-        return NextResponse.json({ success: false, message: "An Instant Funded plan has already been used for this account." }, { status: 409 })
-      }
-    }
-
     // Upload screenshot to R2 if provided
     let screenshotUrl: string | null = null
     if (screenshotBase64 && screenshotBase64.startsWith("data:")) {
@@ -149,8 +140,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const paymentMethod = requestedFundingMode === "funded" ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto"
-    await withTransaction(async (client) => {
+    const submission = await withTransaction(async (client) => {
+      const { rows: [account] } = await client.query(
+        "SELECT account_type, funded_breach_status FROM participants WHERE id = $1 FOR UPDATE",
+        [participant.id],
+      )
+      if (!account) return { error: "User not found", status: 404 }
+      const isFundedRestart = account.account_type === "funded" && account.funded_breach_status === "breached"
+      const isPlanPayment = requestedFundingMode === "funded"
+      if ((account.account_type === "challenge" || isFundedRestart) && !isPlanPayment) {
+        return { error: "Select a Funded plan and submit a new plan payment.", status: 409 }
+      }
+      const paymentMethod = isFundedRestart ? "funded_restart" : isPlanPayment ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto"
+      if (isPlanPayment) {
+        const existingPlan = await client.query(
+          `SELECT 1 FROM topup_requests t JOIN participants p ON p.id = t.participant_id
+           WHERE t.participant_id = $1 AND t.payment_method = $2
+             AND ($2 <> 'funded_restart' OR (LOWER(t.status) IN ('pending', 'pending_collection', 'processing')
+               AND (p.funded_breach_at IS NULL OR t.created_at >= p.funded_breach_at))) LIMIT 1`,
+          [participant.id, paymentMethod],
+        )
+        if (existingPlan.rowCount) return { error: isFundedRestart ? "Your restart payment is already under review." : "An Instant Funded plan has already been used for this account.", status: 409 }
+      }
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended(LOWER($1::text), 0))", [normalizedTransactionHash])
+      const duplicate = await client.query("SELECT 1 FROM topup_requests WHERE LOWER(transaction_id) = LOWER($1) LIMIT 1", [normalizedTransactionHash])
+      if (duplicate.rowCount) return { error: "This transaction has already been submitted.", status: 409 }
       if (normalizedPromoCode) {
         const reserved = await client.query(
           `UPDATE promo_codes SET used_count = used_count + 1
@@ -167,7 +181,9 @@ export async function POST(request: NextRequest) {
          VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, $9)`,
         [participant.id, participant.email, payableAmount, normalizedTransactionHash, paymentMethod, screenshotUrl, normalizedPromoCode || null, promoDiscountPercent, promoBonusAmount],
       )
+      return { isFundedRestart }
     })
+    if ("error" in submission) return NextResponse.json({ success: false, message: submission.error }, { status: submission.status })
 
     // Log activity (best-effort — table may not exist)
     await execute(
@@ -177,7 +193,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: promoBonusAmount > 0
+      fundedRestartRequired: submission.isFundedRestart,
+      message: submission.isFundedRestart ? "Restart payment submitted for review. Your balance stays at $0.00 until approval." : promoBonusAmount > 0
         ? `Top-up submitted. Your $${requestedAmount.toFixed(2)} funding request has $${promoBonusAmount.toFixed(2)} in promo savings when approved.`
         : "Top-up request submitted successfully",
       promoCode: normalizedPromoCode || null,
