@@ -103,7 +103,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Sign-in is temporarily unavailable while your account is under security review." }, { status: 403 })
     }
 
-    if (participant.is_deleted || participant.is_frozen || participant.account_frozen || ["blocked", "frozen", "suspended"].includes(participant.status)) {
+    const fundedAccountBreached = participant.funded_breach_status === "breached"
+    if (participant.is_deleted || participant.is_frozen || (participant.account_frozen && !fundedAccountBreached) || ["blocked", "frozen", "suspended"].includes(participant.status)) {
       return NextResponse.json({ success: false, error: "Account is unavailable" }, { status: 403 })
     }
 
