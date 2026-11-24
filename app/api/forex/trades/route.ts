@@ -6,8 +6,6 @@ import { calculateChallengeMargin, calculateChallengePnl, getChallengePlan, getC
 import { failChallengeAccount, getChallengeExecutionPrice, getChallengeOpenPositionPnl, getLiveChallengeRates } from "@/lib/challenge-account-server"
 import {
   getFundedBaseAmount,
-  getFundedSingleTradeLossLimit,
-  getFundedTradeRiskAmount,
   isFundedDrawdownBreached,
 } from "@/lib/funded-account"
 import { enforceRateLimit, getActiveRestriction, getSecurityContext, inspectTradeRisk, recordSecurityEvent, recordTradeRiskFlags, updateParticipantSecurityProfile } from "@/lib/security"
@@ -203,17 +201,6 @@ export async function POST(req: NextRequest) {
       if (!Number.isFinite(trade.leverage) || trade.leverage < 1 || trade.leverage > 100) {
         return NextResponse.json({ success: false, error: "Funded accounts allow leverage up to 100x" }, { status: 400 })
       }
-      if (trade.sl === null || trade.sl === undefined) {
-        return NextResponse.json({ success: false, error: "Funded trades require a stop loss and are capped at 1% risk per trade." }, { status: 400 })
-      }
-      if (action === "pending") {
-        const fundedInitialBalance = Number(participant.funded_initial_balance)
-          || getFundedBaseAmount(participant.account_balance, participant.funded_amount)
-        const tradeRisk = getFundedTradeRiskAmount(trade.pair, Number(trade.lotSize), Number(trade.targetPrice), Number(trade.sl))
-        if (tradeRisk === null || tradeRisk > getFundedSingleTradeLossLimit(fundedInitialBalance)) {
-          return NextResponse.json({ success: false, error: "Funded stop-loss risk cannot exceed 1% of the initial account balance." }, { status: 400 })
-        }
-      }
     }
     let challengeRates: Awaited<ReturnType<typeof getLiveChallengeRates>> = null
     let challengeExecutionPrice: number | null = null
@@ -234,14 +221,6 @@ export async function POST(req: NextRequest) {
       const validTakeProfit = takeProfit === null || (trade.direction === "BUY" ? takeProfit > challengeExecutionPrice : takeProfit < challengeExecutionPrice)
       if (!validStopLoss || !validTakeProfit) {
         return NextResponse.json({ success: false, error: "Stop loss and take profit must be valid for the verified execution price." }, { status: 400 })
-      }
-      if (participant?.account_type === "funded") {
-        const fundedInitialBalance = Number(participant.funded_initial_balance)
-          || getFundedBaseAmount(participant.account_balance, participant.funded_amount)
-        const risk = stopLoss === null ? null : getFundedTradeRiskAmount(trade.pair, Number(trade.lotSize), challengeExecutionPrice, stopLoss)
-        if (risk === null || risk > getFundedSingleTradeLossLimit(fundedInitialBalance)) {
-          return NextResponse.json({ success: false, error: "Funded stop-loss risk cannot exceed 1% of the initial account balance." }, { status: 400 })
-        }
       }
     }
 
@@ -287,15 +266,6 @@ export async function POST(req: NextRequest) {
         if (!account) throw Object.assign(new Error("Participant account was not found"), { status: 404 })
         if (account.account_type === "funded" && account.funded_breach_status === "breached") {
           throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Choose a new plan and submit payment to restart trading."), { status: 403 })
-        }
-        if (account.account_type === "funded") {
-          const fundedInitial = Number(account.funded_initial_balance) || getFundedBaseAmount(account.account_balance, account.funded_amount)
-          const risk = trade.sl === null || trade.sl === undefined
-            ? null
-            : getFundedTradeRiskAmount(trade.pair, Number(trade.lotSize), Number(executionPrice), Number(trade.sl))
-          if (risk === null || risk > getFundedSingleTradeLossLimit(fundedInitial)) {
-            throw Object.assign(new Error("Funded stop-loss risk cannot exceed 1% of the initial account balance."), { status: 400 })
-          }
         }
         const accountIsChallenge = account.account_type === "challenge"
         const accountChallengePlan = accountIsChallenge ? getChallengePlan(account.challenge_plan_key) : null
@@ -434,13 +404,6 @@ export async function POST(req: NextRequest) {
         if (account.account_type === "funded") {
           if (account.funded_breach_status === "breached") {
             throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Choose a new plan and submit payment to restart trading."), { status: 403 })
-          }
-          const fundedInitial = Number(account.funded_initial_balance) || getFundedBaseAmount(account.account_balance, account.funded_amount)
-          const risk = trade.sl === null || trade.sl === undefined
-            ? null
-            : getFundedTradeRiskAmount(trade.pair, Number(trade.lotSize), Number(trade.targetPrice), Number(trade.sl))
-          if (risk === null || risk > getFundedSingleTradeLossLimit(fundedInitial)) {
-            throw Object.assign(new Error("Funded stop-loss risk cannot exceed 1% of the initial account balance."), { status: 400 })
           }
         }
 
@@ -1077,17 +1040,6 @@ export async function PATCH(req: NextRequest) {
       const validSl = sl === null || sl === undefined || (Number.isFinite(Number(sl)) && (direction === "BUY" ? Number(sl) < entry : Number(sl) > entry))
       const validTp = tp === null || tp === undefined || (Number.isFinite(Number(tp)) && (direction === "BUY" ? Number(tp) > entry : Number(tp) < entry))
       if (!validSl || !validTp) return NextResponse.json({ success: false, error: "Stop loss and take profit must be valid for the trade direction" }, { status: 400 })
-      if (isFundedAccount) {
-        if (sl === null || sl === undefined) {
-          return NextResponse.json({ success: false, error: "Funded trades must keep a stop loss within the 1% single-trade risk limit." }, { status: 400 })
-        }
-        const fundedInitial = Number(accountRuleResult.rows[0]?.funded_initial_balance)
-          || getFundedBaseAmount(accountRuleResult.rows[0]?.account_balance, accountRuleResult.rows[0]?.funded_amount)
-        const risk = getFundedTradeRiskAmount(current.rows[0].pair, Number(current.rows[0].lot_size), entry, Number(sl))
-        if (risk === null || risk > getFundedSingleTradeLossLimit(fundedInitial)) {
-          return NextResponse.json({ success: false, error: "Funded stop-loss risk cannot exceed 1% of the initial account balance." }, { status: 400 })
-        }
-      }
       const result = await db.query(
         `UPDATE forex_trades SET sl = $1, tp = $2, trailing_stop_pips = $3, updated_at = NOW()
          WHERE id = $4 AND LOWER(participant_email) = LOWER($5) AND status = 'open'`,
@@ -1267,17 +1219,6 @@ export async function PATCH(req: NextRequest) {
           }
           const margin = calculateChallengeMargin(pending.pair, Number(pending.lot_size), executionPrice, Number(pending.leverage))
           if (margin < 3000) throw Object.assign(new Error("Funded accounts require a minimum order amount of 3000."), { status: 400 })
-          const fundedInitial = Number(account.funded_initial_balance)
-            || getFundedBaseAmount(account.account_balance, account.funded_amount)
-          const stopLoss = Number(pending.sl)
-          const validStopLoss = pending.sl !== null && pending.sl !== undefined && Number.isFinite(stopLoss)
-            && (pending.direction === "BUY" ? stopLoss < executionPrice : stopLoss > executionPrice)
-          const risk = validStopLoss
-            ? getFundedTradeRiskAmount(pending.pair, Number(pending.lot_size), executionPrice, stopLoss)
-            : null
-          if (risk === null || risk > getFundedSingleTradeLossLimit(fundedInitial)) {
-            throw Object.assign(new Error("Filled order exceeds the funded 1% single-trade risk limit."), { status: 400 })
-          }
           const balanceBefore = Number(account.account_balance) || 0
           if (balanceBefore < margin) throw Object.assign(new Error("Insufficient balance to fill this funded order."), { status: 400 })
           const fillTime = new Date().toISOString()
