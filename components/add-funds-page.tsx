@@ -5,12 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation"
 import useSWR from "swr"
 import { ArrowLeft, RefreshCw } from "lucide-react"
 import { participantFetch } from "@/lib/auth"
+import { getAccountBreach, type BreachAccount } from "@/lib/account-breach"
 import { FundingCheckout } from "@/components/topup-modal"
 import { PageLoader } from "@/components/ui/page-loader"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
-type FundingParticipant = {
+type FundingParticipant = BreachAccount & {
   email: string
   username: string
   account_balance: number
@@ -42,7 +43,8 @@ export function AddFundsPage() {
       <Button variant="outline" asChild><Link href="/participant/login">Sign in</Link></Button>
     </main>
   )
-  if (participant.account_type === "challenge") return (
+  const breach = getAccountBreach(participant)
+  if (participant.account_type === "challenge" && !breach) return (
     <main className="participant-funding-workspace mobile-finance-message flex min-h-dvh flex-col gap-5 p-5 font-sans">
       <h1 className="text-2xl font-semibold">Evaluation account</h1>
       <p className="text-pretty leading-relaxed">Deposits are not available during your challenge evaluation.</p>
@@ -50,6 +52,6 @@ export function AddFundsPage() {
     </main>
   )
 
-  const isFunded = participant.account_type === "funded"
+  const isFunded = participant.account_type === "funded" || Boolean(breach)
   return <FundingCheckout presentation="page" isOpen onClose={() => router.push(returnHref)} currentBalance={Number(participant.account_balance) || 0} userId={participant.username || participant.email} userEmail={participant.email} isFundedAccount={isFunded} isInitialFundedTopUp={isFunded && (params.get("initial") === "1" || Number(participant.funded_tier_top_up_count) === 0)} openFundedTier={params.get("tier") === "1"} initialAmount={Number(params.get("amount")) || undefined} initialFundingMode={params.get("mode") === "actual" ? "actual" : params.get("mode") === "funded" ? "funded" : undefined} initialPromoCode={params.get("promo") || undefined} />
 }

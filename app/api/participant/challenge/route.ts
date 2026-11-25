@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPool, withTransaction } from "@/lib/db"
+import { getAccountBreach } from "@/lib/account-breach"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { DEFAULT_CHALLENGE_PLANS, getChallengePlan, getChallengeSnapshot } from "@/lib/challenge-account"
 import { failChallengeAccount, getChallengeOpenPositionPnl, getLiveChallengeRates } from "@/lib/challenge-account-server"
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
         `SELECT id, email, username, account_type, account_balance, challenge_plan_key,
                 challenge_status, challenge_started_at, challenge_passed_at, challenge_passed_equity, challenge_failed_at,
                 challenge_peak_equity, challenge_day_start_equity, challenge_day_start_date,
-                challenge_trading_days, challenge_last_trading_date
+                challenge_trading_days, challenge_last_trading_date, funded_breach_status, funded_breach_at
          FROM participants WHERE id = $1 FOR UPDATE`,
         [auth.participantId],
       )
@@ -192,17 +193,27 @@ export async function POST(request: NextRequest) {
 
     const result = await withTransaction(async (client) => {
       const participantResult = await client.query(
-        `SELECT id, email, account_type, challenge_status
+        `SELECT id, email, account_type, challenge_status, challenge_failed_at, funded_breach_status, funded_breach_at
          FROM participants WHERE id = $1 FOR UPDATE`,
         [auth.participantId],
       )
       const participant = participantResult.rows[0]
       if (!participant) return { error: "Participant not found", status: 404 }
-      if (participant.account_type !== "challenge") {
-        return { error: "Challenge enrollment is available only for Challenge accounts selected during registration.", status: 403 }
+      const breach = getAccountBreach(participant)
+      if (participant.account_type !== "challenge" && !breach) {
+        return { error: "Switch to a Challenge account from your dashboard before enrolling.", status: 403 }
       }
-      if (["active", "pending_payment", "passed"].includes(participant.challenge_status)) {
+      if (!breach && ["active", "pending_payment", "passed"].includes(participant.challenge_status)) {
         return { error: "Your Challenge account already has a payment or evaluation in progress.", status: 409 }
+      }
+      if (breach) {
+        const pending = await client.query(
+          `SELECT 1 FROM topup_requests WHERE participant_id = $1
+             AND LOWER(status) IN ('pending', 'pending_collection', 'processing')
+             AND ($2::timestamptz IS NULL OR created_at >= $2::timestamptz) LIMIT 1`,
+          [participant.id, breach.occurredAt],
+        )
+        if (pending.rowCount) return { error: "Your replacement payment is already under review. Wait for its review before sending another.", status: 409 }
       }
 
       await client.query("SELECT pg_advisory_xact_lock(hashtextextended(LOWER($1::text), 0))", [transactionId])

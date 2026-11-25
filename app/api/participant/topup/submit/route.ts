@@ -3,6 +3,7 @@ import { query, execute, withTransaction } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { uploadBase64ToR2 } from "@/lib/cloudflare-r2"
 import { FUNDED_PLANS } from "@/lib/funded-account"
+import { getAccountBreach } from "@/lib/account-breach"
 
 export async function GET(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -61,8 +62,8 @@ export async function POST(request: NextRequest) {
     }
   const participant = participants[0]
   const requestedFundingMode = String(fundingMode || "actual").toLowerCase()
-  if (participant.account_type === "challenge" && requestedFundingMode !== "funded") {
-  return NextResponse.json({ success: false, message: "Challenge accounts can only submit an Instant Funded plan payment." }, { status: 403 })
+  if (!["actual", "funded"].includes(requestedFundingMode)) {
+    return NextResponse.json({ success: false, message: "Choose a valid account option." }, { status: 400 })
   }
 
     if (requestedFundingMode === "funded" && !FUNDED_PLANS.some((plan) => plan.topUpAmount === requestedAmount)) {
@@ -142,17 +143,27 @@ export async function POST(request: NextRequest) {
 
     const submission = await withTransaction(async (client) => {
       const { rows: [account] } = await client.query(
-        "SELECT account_type, funded_breach_status FROM participants WHERE id = $1 FOR UPDATE",
+        "SELECT account_type, funded_breach_status, funded_breach_at, challenge_status, challenge_failed_at FROM participants WHERE id = $1 FOR UPDATE",
         [participant.id],
       )
       if (!account) return { error: "User not found", status: 404 }
-      const isFundedRestart = account.account_type === "funded" && account.funded_breach_status === "breached"
+      const breach = getAccountBreach(account)
+      const isFundedRestart = Boolean(breach)
       const isPlanPayment = requestedFundingMode === "funded"
-      if ((account.account_type === "challenge" || isFundedRestart) && !isPlanPayment) {
-        return { error: "Select a Funded plan and submit a new plan payment.", status: 409 }
+      if (account.account_type === "challenge" && !breach && !isPlanPayment) {
+        return { error: "Active Challenge accounts cannot receive wallet deposits.", status: 409 }
       }
-      const paymentMethod = isFundedRestart ? "funded_restart" : isPlanPayment ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto"
-      if (isPlanPayment) {
+      const paymentMethod = breach ? isPlanPayment ? "funded_restart" : "normal_restart" : isPlanPayment ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto"
+      if (breach) {
+        const pending = await client.query(
+          `SELECT 1 FROM topup_requests WHERE participant_id = $1
+             AND LOWER(status) IN ('pending', 'pending_collection', 'processing')
+             AND ($2::timestamptz IS NULL OR created_at >= $2::timestamptz) LIMIT 1`,
+          [participant.id, breach.occurredAt],
+        )
+        if (pending.rowCount) return { error: "Your replacement payment is already under review. Wait for its review before sending another.", status: 409 }
+      }
+      if (isPlanPayment && !breach) {
         const existingPlan = await client.query(
           `SELECT 1 FROM topup_requests t JOIN participants p ON p.id = t.participant_id
            WHERE t.participant_id = $1 AND t.payment_method = $2

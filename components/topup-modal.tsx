@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useIsMobile } from "@/hooks/use-mobile"
 import QRCode from "qrcode"
+import useSWR from "swr"
+import { buildUpiPaymentUri } from "@/lib/upi-payment"
 import { ArrowLeft, X, Wallet, CheckCircle2, AlertCircle, Loader2, Send, Landmark } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -47,6 +50,16 @@ function logFundingActivity(payload: FundingActivityPayload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   }).catch(() => undefined)
+}
+
+async function loadPaymentSettings(url: string): Promise<Record<string, string>> {
+  const response = await fetch(url, { cache: "no-store" })
+  if (!response.ok) throw new Error("Payment details could not be loaded. Please reopen checkout to retry.")
+  const data = await response.json()
+  if (!data || typeof data !== "object" || Array.isArray(data) || data.success !== true) throw new Error("Payment details are unavailable.")
+  const values = Object.fromEntries(Object.entries(data).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+  values.usdt_inr_rate = String(data.usdt_inr_rate ?? "")
+  return values
 }
 
 function calculatePromoDiscount(baseAmount: number, promo: AppliedPromo, inrRate: number) {
@@ -98,16 +111,15 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   const [applyingPromo, setApplyingPromo] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20" | "INR">("ALL")
   const [paymentMethod, setPaymentMethod] = useState<"crypto" | "inr">("crypto")
-  const DEFAULT_INR_UPI_ID = "elitefun@slc"
-  const [inrDetails, setInrDetails] = useState<{ upiId: string | null; bankName: string | null; accountNumber: string | null; ifsc: string | null; holderName: string | null }>({ upiId: DEFAULT_INR_UPI_ID, bankName: null, accountNumber: null, ifsc: null, holderName: null })
-  const [inrRate, setInrRate] = useState(104)
-  const [inrQrDataUrl, setInrQrDataUrl] = useState<string | null>(null)
-  const [inrQrExpiresAt, setInrQrExpiresAt] = useState<number | null>(null)
-  const [inrSecondsRemaining, setInrSecondsRemaining] = useState(0)
-  const [loadingAddress, setLoadingAddress] = useState(false)
+  const { data: paymentSettings, error: settingsError, isLoading: loadingAddress, isValidating: refreshingSettings, mutate: retrySettings } = useSWR(isOpen ? "/api/public/settings" : null, loadPaymentSettings, { revalidateOnFocus: false, shouldRetryOnError: false })
+  const settings = settingsError ? undefined : paymentSettings
+  const walletAddresses = { TRC20: settings?.trc20_address || null, BEP20: settings?.bep20_address || settings?.topup_address || null, ERC20: settings?.erc20_address || null }
+  const inrDetails = { upiId: settings?.inr_upi_id?.trim() || null, bankName: settings?.inr_bank_name || null, accountNumber: settings?.inr_account_number || null, ifsc: settings?.inr_ifsc_code || null, holderName: settings?.inr_account_holder_name || null }
+  const configuredInrRate = Number(settings?.usdt_inr_rate)
+  const hasValidInrRate = Number.isFinite(configuredInrRate) && configuredInrRate > 0
+  const inrRate = hasValidInrRate ? configuredInrRate : 104
   const [checkingFundedTier, setCheckingFundedTier] = useState(false)
   const [fundedTierEligibility, setFundedTierEligibility] = useState<boolean | null>(null)
   const [fundedRestartRequired, setFundedRestartRequired] = useState(false)
@@ -145,9 +157,6 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     setErrorMessage("")
     setNetwork("ALL")
     setPaymentMethod("crypto")
-    setInrQrDataUrl(null)
-    setInrQrExpiresAt(null)
-    setInrSecondsRemaining(0)
     setFundingMode("actual")
     setFundedTierEligibility(null)
     setFundedRestartRequired(false)
@@ -173,7 +182,6 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     }
     fetchPendingRequests()
     const fetchFundedTierEligibility = async () => {
-      if (!isFundedAccount && !isInitialFundedTopUp) return
       setCheckingFundedTier(true)
       try {
         const response = await participantFetch("/api/participant/topup/availability", { cache: "no-store" })
@@ -189,7 +197,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
         setFundedRestartRequired(requiresRestart)
         if (requiresRestart) {
           setAmount("")
-          setFundingMode("funded")
+          setFundingMode(initialFundingMode === "actual" ? "actual" : "funded")
         } else if (available && (initialFundingMode === "funded" || (initialFundingMode !== "actual" && (openFundedTier || isInitialFundedTopUp)))) {
           setFundingMode("funded")
         }
@@ -200,21 +208,6 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
       }
     }
     fetchFundedTierEligibility()
-    const fetchAddress = async () => {
-      setLoadingAddress(true)
-      try {
-        const res = await fetch("/api/public/settings")
-        const data = await res.json()
-        setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null, ERC20: data.erc20_address || null })
-        setInrDetails({ upiId: data.inr_upi_id || DEFAULT_INR_UPI_ID, bankName: data.inr_bank_name || null, accountNumber: data.inr_account_number || null, ifsc: data.inr_ifsc_code || null, holderName: data.inr_account_holder_name || null })
-        setInrRate(Number(data.usdt_inr_rate) > 0 ? Number(data.usdt_inr_rate) : 104)
-      } catch {
-        setWalletAddresses({ TRC20: null, BEP20: null, ERC20: null })
-      } finally {
-        setLoadingAddress(false)
-      }
-    }
-    fetchAddress()
   }, [isOpen, isFundedAccount, isInitialFundedTopUp, openFundedTier, initialAmount, initialFundingMode])
 
   const copyAddress = () => {
@@ -227,50 +220,9 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
 
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
 
-  useEffect(() => {
-    if (!isOpen || paymentMethod !== "inr" || !inrDetails.upiId || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
-      setInrQrDataUrl(null)
-      setInrQrExpiresAt(null)
-      setInrSecondsRemaining(0)
-      return
-    }
-    const expiresAt = Date.now() + 5 * 60 * 1000
-    const rawAmount = Number(amount)
-    const promoDiscountAmount = appliedPromo ? calculatePromoDiscount(rawAmount, appliedPromo, inrRate) : 0
-    const discountedAmount = Number(Math.max(0, rawAmount - promoDiscountAmount).toFixed(2))
-    const inrAmount = discountedAmount * inrRate
-    setInrQrDataUrl(null)
-    setInrQrExpiresAt(expiresAt)
-    setInrSecondsRemaining(5 * 60)
-    let cancelled = false
-    QRCode.toDataURL(`upi://pay?pa=${encodeURIComponent(inrDetails.upiId)}&pn=${encodeURIComponent(inrDetails.holderName || "Elite Fund")}&am=${inrAmount.toFixed(2)}&cu=INR`, { width: 220, margin: 1 })
-      .then((url) => {
-        if (cancelled) return
-        setInrQrDataUrl(url)
-        const key = `inr:${amount}:${url}`
-        if (!loggedQrEventsRef.current.has(key)) {
-          loggedQrEventsRef.current.add(key)
-          logFundingActivity({ event: "funding_qr_created", paymentMethod: "inr", amount: Number(amount) })
-        }
-      })
-      .catch(() => { if (!cancelled) setInrQrDataUrl(null) })
-    return () => { cancelled = true }
-  }, [isOpen, paymentMethod, inrDetails.upiId, inrDetails.holderName, amount, appliedPromo, inrRate])
-
-  useEffect(() => {
-    if (!inrQrExpiresAt) return
-    const updateCountdown = () => setInrSecondsRemaining(Math.max(0, Math.ceil((inrQrExpiresAt - Date.now()) / 1000)))
-    updateCountdown()
-    const timer = window.setInterval(updateCountdown, 1000)
-    return () => window.clearInterval(timer)
-  }, [inrQrExpiresAt])
-
-  const inrQrExpired = paymentMethod === "inr" && inrQrExpiresAt !== null && inrSecondsRemaining <= 0
-  const inrCountdownLabel = `${String(Math.floor(inrSecondsRemaining / 60)).padStart(2, "0")}:${String(inrSecondsRemaining % 60).padStart(2, "0")}`
-
   // Generate a real, scannable QR code for the selected deposit address.
   useEffect(() => {
-    if (!isOpen || !selectedWalletAddress) {
+    if (!isOpen || fundedTierEligibility === null || (fundedRestartRequired && !fundedTierEligibility) || !selectedWalletAddress) {
       setQrDataUrl(null)
       setQrLoading(false)
       return
@@ -303,7 +255,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     return () => {
       cancelled = true
     }
-  }, [isOpen, selectedWalletAddress, paymentMethod, network, amount, fundingMode])
+  }, [isOpen, fundedTierEligibility, fundedRestartRequired, selectedWalletAddress, paymentMethod, network, amount, fundingMode])
 
   const parsedAmount = parseFloat(amount)
   const promoDiscountAmount = appliedPromo && Number.isFinite(parsedAmount) && parsedAmount > 0
@@ -315,15 +267,25 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   const fundedTiers: Record<number, number> = Object.fromEntries(FUNDED_PLANS.map((plan) => [plan.topUpAmount, plan.baseAmount]))
   // Keep the two funded-account choices visible even if the parent updates
   // the modal mode and open state in the same batched click event.
-  const showFundingOptions = Boolean(isFundedAccount || isInitialFundedTopUp)
+  const showFundingOptions = Boolean(isFundedAccount || isInitialFundedTopUp || fundedRestartRequired)
   const canUseFundedTier = fundedRestartRequired ? fundedTierEligibility === true : fundedTierAvailable ?? fundedTierEligibility === true
   const isFundedAmountValid = !showFundingOptions || fundingMode !== "funded" || parsedAmount in fundedTiers
   const isPromoCompatible = !appliedPromo || appliedPromo.discountType !== "inr" || paymentMethod === "inr"
-  const isAmountValid = (!showFundingOptions || fundedTierEligibility !== null) && (!fundedRestartRequired || (canUseFundedTier && fundingMode === "funded"))
-    && !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid && isPromoCompatible && (!appliedPromo || payableAmount >= 5)
+  const isAmountValid = fundedTierEligibility !== null && (!fundedRestartRequired || canUseFundedTier)
+    && Number.isFinite(parsedAmount) && parsedAmount >= 5 && parsedAmount <= 100000 && isFundedAmountValid && isPromoCompatible && (!appliedPromo || payableAmount >= 5)
   const expectedCreditAmount = fundingMode === "funded" && parsedAmount in fundedTiers
     ? fundedTiers[parsedAmount as keyof typeof fundedTiers]
     : parsedAmount
+  const inrPaymentUri = isOpen && paymentMethod === "inr" && isAmountValid && hasValidInrRate && !loadingAddress && !settingsError && !applyingPromo && (!promoCode.trim() || appliedPromo) && (fundingMode !== "funded" || canUseFundedTier)
+    ? buildUpiPaymentUri(inrDetails.upiId, inrDetails.holderName, payableAmount * inrRate)
+    : null
+  const onInrQrCreated = useCallback(() => {
+    if (!inrPaymentUri) return
+    const key = `inr:${amount}:${inrPaymentUri}`
+    if (loggedQrEventsRef.current.has(key)) return
+    loggedQrEventsRef.current.add(key)
+    logFundingActivity({ event: "funding_qr_created", paymentMethod: "inr", amount: Number(amount) })
+  }, [amount, inrPaymentUri])
 
   const applyPromoCode = useCallback(async (requestedCode = promoCode) => {
     const normalizedCode = requestedCode.trim().toUpperCase().replace(/\s+/g, "")
@@ -442,14 +404,14 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
 
   const checkoutDescription = step === "success"
     ? fundedRestartRequired ? "Your restart payment is under review. Your balance remains $0.00 until approval." : "Your payment reference has been sent for review."
-    : fundedRestartRequired ? "Choose a new plan and pay its fee. Your trading balance stays at $0.00 until the payment is approved." : "Choose your amount, transfer your payment, and submit the reference."
+    : fundedRestartRequired ? "Buy a new Funded or Challenge plan, or deposit into a new Normal account. Your trading balance stays at $0.00 until approval." : "Choose your amount, transfer your payment, and submit the reference."
 
   const content = (
     <>
         <header className="funding-checkout-header">
           <div className="funding-checkout-heading">
             <p className="funding-kicker">EliteFund checkout</p>
-            {presentation === "page" ? <h1>{step === "success" ? "Request submitted" : fundedRestartRequired ? "Restart your Funded account" : "Add funds"}</h1> : <DialogTitle>{step === "success" ? "Request submitted" : fundedRestartRequired ? "Restart your Funded account" : "Add funds"}</DialogTitle>}
+            {presentation === "page" ? <h1>{step === "success" ? "Request submitted" : fundedRestartRequired ? "Choose your next account" : "Add funds"}</h1> : <DialogTitle>{step === "success" ? "Request submitted" : fundedRestartRequired ? "Choose your next account" : "Add funds"}</DialogTitle>}
             {presentation === "page" ? <p>{checkoutDescription}</p> : <DialogDescription>{checkoutDescription}</DialogDescription>}
           </div>
           {step !== "submitting" && <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={presentation === "page" ? "Back to dashboard" : "Close funding checkout"}>{presentation === "page" ? <ArrowLeft data-icon="inline-start" /> : <X data-icon="inline-start" />}</Button>}
@@ -478,9 +440,10 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
                             {FUNDED_PLANS.map(({ topUpAmount, baseAmount }) => <ToggleGroupItem key={topUpAmount} value={String(topUpAmount)} onClick={() => { setFundingMode("funded"); setPaymentMethod("inr"); setNetwork("INR"); setAmount(String(topUpAmount)) }}><strong>${topUpAmount.toLocaleString()} payment</strong><span>${baseAmount.toLocaleString()} funded</span></ToggleGroupItem>)}
                           </ToggleGroup>
                         ) : null}
-                        {!fundedRestartRequired && <Button type="button" variant="outline" className="funding-normal-option" data-active={fundingMode === "actual"} aria-pressed={fundingMode === "actual"} onClick={() => { setFundingMode("actual"); setAmount("") }} disabled={step === "submitting"}>
-                          <span><strong>Normal Add Fund</strong><small>Add your selected amount to your trading wallet.</small></span>{fundingMode === "actual" && <CheckCircle2 data-icon="inline-end" />}
-                        </Button>}
+                        <Button type="button" variant="outline" className="funding-normal-option" data-active={fundingMode === "actual"} aria-pressed={fundingMode === "actual"} onClick={() => { setFundingMode("actual"); setAmount("") }} disabled={step === "submitting" || (fundedRestartRequired && !canUseFundedTier)}>
+                          <span><strong>{fundedRestartRequired ? "Start Normal account" : "Normal Add Fund"}</strong><small>{fundedRestartRequired ? "Your deposit becomes the new Normal account balance after approval." : "Add your selected amount to your trading wallet."}</small></span>{fundingMode === "actual" && <CheckCircle2 data-icon="inline-end" />}
+                        </Button>
+                        {fundedRestartRequired && <Button asChild variant="outline"><Link href="/participant/dashboard/challenge#challenge-plans-heading">Choose a Challenge account instead</Link></Button>}
                         <Separator />
                       </div>
                     )}
@@ -497,10 +460,10 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
                     <Field data-invalid={Boolean(amount && !isAmountValid)}>
                       <FieldLabel htmlFor="topup-amount">{paymentMethod === "inr" ? "Funding amount (USD) — QR in INR" : appliedPromo ? "Funding amount (USD)" : "Amount sent (USDT)"}<span aria-hidden="true">*</span></FieldLabel>
                       <InputGroup>
-                        <InputGroupInput id="topup-amount" type="number" inputMode="decimal" min="5" max="100000" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="funding-amount-input" readOnly={fundedRestartRequired} disabled={step === "submitting"} aria-required="true" aria-invalid={Boolean(amount && !isAmountValid)} aria-describedby={amount && !isAmountValid && isPromoCompatible ? "topup-amount-help topup-amount-error" : "topup-amount-help"} />
+                        <InputGroupInput id="topup-amount" type="number" inputMode="decimal" min="5" max="100000" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="funding-amount-input" readOnly={fundedRestartRequired && fundingMode === "funded"} disabled={step === "submitting"} aria-required="true" aria-invalid={Boolean(amount && !isAmountValid)} aria-describedby={amount && !isAmountValid && isPromoCompatible ? "topup-amount-help topup-amount-error" : "topup-amount-help"} />
                         <InputGroupAddon align="inline-end">{paymentMethod === "inr" || appliedPromo ? "USD" : "USDT"}</InputGroupAddon>
                       </InputGroup>
-                      {!fundedRestartRequired && <ToggleGroup type="single" variant="outline" className="funding-choice-group" value={String(Number(amount))} disabled={step === "submitting"} aria-label="Quick funding amounts">
+                      {(!fundedRestartRequired || fundingMode === "actual") && <ToggleGroup type="single" variant="outline" className="funding-choice-group" value={String(Number(amount))} disabled={step === "submitting"} aria-label="Quick funding amounts">
                         {(fundingMode === "funded" ? [50, 100, 250, 500] : [25, 50, 100, 250]).map((quickAmount) => <ToggleGroupItem key={quickAmount} value={String(quickAmount)} onClick={() => setAmount(String(quickAmount))}>${quickAmount}</ToggleGroupItem>)}
                       </ToggleGroup>}
                       <FieldDescription id="topup-amount-help">{paymentMethod === "inr" && Number.isFinite(payableAmount) && payableAmount > 0 ? `UPI payment: ₹${(payableAmount * inrRate).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹${inrRate} per $1.` : fundingMode === "funded" ? "Use one of the supported funded account tiers." : "Minimum funding amount: $5."}</FieldDescription>
@@ -536,7 +499,14 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
                   </FieldGroup>
                 </FundingSection>
 
-                <FundingPaymentInstructions paymentMethod={paymentMethod} network={network} payableAmount={payableAmount} inrRate={inrRate} inrDetails={inrDetails} inrQrDataUrl={inrQrDataUrl} inrQrExpired={inrQrExpired} inrCountdownLabel={inrCountdownLabel} selectedWalletAddress={selectedWalletAddress} loadingAddress={loadingAddress} qrLoading={qrLoading} qrDataUrl={qrDataUrl} copiedAddress={copiedAddress} onCopyAddress={copyAddress} />
+                {fundedTierEligibility !== null && (!fundedRestartRequired || canUseFundedTier) ? (
+                  <>
+                    {settingsError && <Alert variant="destructive"><AlertCircle aria-hidden="true" /><AlertDescription className="flex flex-col gap-3"><span>Payment details could not be loaded. Do not send money until the recipient is confirmed.</span><Button type="button" variant="outline" disabled={refreshingSettings} onClick={() => retrySettings()}>{refreshingSettings ? "Retrying…" : "Retry payment details"}</Button></AlertDescription></Alert>}
+                    <FundingPaymentInstructions paymentMethod={paymentMethod} network={network} payableAmount={payableAmount} inrRate={inrRate} inrDetails={inrDetails} inrPaymentUri={inrPaymentUri} onInrQrCreated={onInrQrCreated} selectedWalletAddress={selectedWalletAddress} loadingAddress={loadingAddress} qrLoading={qrLoading} qrDataUrl={qrDataUrl} copiedAddress={copiedAddress} onCopyAddress={copyAddress} />
+                  </>
+                ) : (
+                  <Alert><AlertDescription>{fundedRestartRequired ? "Your replacement payment is under review. Payment instructions are hidden to prevent another transfer; your balance stays at $0.00 until approval." : "Checking account eligibility before showing payment instructions."}</AlertDescription></Alert>
+                )}
 
 
                 <FundingSection number={3} title="Confirm your transfer" description="Already paid? Add your payment reference so the team can verify it.">
