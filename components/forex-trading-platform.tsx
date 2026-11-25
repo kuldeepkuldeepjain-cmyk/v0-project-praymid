@@ -19,7 +19,7 @@ import tradeScrollStyles from "./terminal-trade-scroll.module.css"
 import marketWatchStyles from "./market-watch-header.module.css"
 import mobileControlsStyles from "./mobile-terminal-controls.module.css"
 import { ErrorBoundary } from "@/components/error-boundary"
-import { normalizeTimestamp } from "@/lib/normalize-timestamp"
+import { CHART_TIMEFRAMES, useTerminalCandles, type TimeFrame } from "@/hooks/use-terminal-candles"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 import {
   FUNDED_MAX_DRAWDOWN_PERCENT,
@@ -149,7 +149,6 @@ export type ClosedTrade = OpenTrade & {
   closeReason: "manual" | "sl" | "tp" | "trailing_sl" | "stop_out" | "account_breach" | "trade_loss_limit"
 }
 
-type TimeFrame = "1M" | "5M" | "15M" | "30M" | "1H" | "4H" | "1D" | "1W"
 type ToastItem = { id: number; type: "success" | "error" | "info" | "warning"; text: string }
 
 type ModifyTarget = { tradeId: string; sl: string; tp: string; trailingPips: string } | null
@@ -1123,7 +1122,7 @@ function SupportCenterPanel() {
   )
 }
 
-// ─── Quote depth view ─��───────────────────────────────────────────────────────
+// ─── Quote depth view ─���───────────────────────────────────────────────────────
 
 function OrderDepth({ pair, online }: { pair: ForexPair; online: boolean }) {
   return <DepthOfMarketLadder pair={pair} online={online} />
@@ -1511,9 +1510,16 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const accountKycTone = isAccountKycVerified ? "is-verified" : isAccountKycPending ? "is-pending" : "is-needed"
   // ── State ─────────────��─────────────────────────────��─�������──────────────�����������������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
-  const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
+  const [selectedQuote, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
   const [timeframe, setTimeframe]     = useState<TimeFrame>("5M")
+  const freshRateUpdatedAtRef = useRef<Record<string, number>>({})
+  const hasFreshRate = useCallback((symbol: string) => {
+    const updatedAt = freshRateUpdatedAtRef.current[symbol] ?? 0
+    return updatedAt > 0 && Date.now() - updatedAt <= 10_000
+  }, [])
+  const { candles, history, status: historyStatus, refresh: refreshCandles, isRefreshing: isRefreshingCandles } = useTerminalCandles(selectedQuote, timeframe, hasFreshRate)
+  const selectedPair = useMemo(() => selectedQuote ? { ...selectedQuote, candles } : null, [selectedQuote, candles])
   const [utcClock, setUtcClock] = useState("--:--:--")
   const [direction, setDirection]     = useState<TradeDirection>("BUY")
 
@@ -1571,7 +1577,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [online, setOnline]           = useState(false)
   const [terminalLocked, setTerminalLocked] = useState(false)
   const [marketError, setMarketError] = useState<string | null>(null)
-  const [candleError, setCandleError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [toasts, setToasts]           = useState<ToastItem[]>([])
   const [adminNotifications, setAdminNotifications] = useState<Array<{ id: string; type: string; title: string; message: string; time: string; read: boolean }>>([])
@@ -1581,9 +1586,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   // Prevent external balance props from overwriting server-confirmed balance updates
   const suppressExternalSync = useRef(false)
   const [balanceLoaded, setBalanceLoaded] = useState(externalBalance > 0)
-  const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
-  const [candleLoading, setCandleLoading] = useState(false)
-  const candleRequestRef = useRef(0)
   const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order" | "portfolio" | "account">("chart")
   const [isCompactViewport, setIsCompactViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
@@ -1721,16 +1723,19 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const pairsRef        = useRef<ForexPair[]>([])
   const selectedPairRef = useRef<ForexPair | null>(null)
   const openTradesRef   = useRef<OpenTrade[]>([])
-  const freshRateUpdatedAtRef = useRef<Record<string, number>>({})
   const providerRateTimesRef = useRef<Record<string, number>>({})
   const rateSourcesRef = useRef<Record<string, string>>({})
   const lastUiUpdateRef = useRef(0)
   const tickUpdateScheduledRef = useRef(false)
-  const hasFreshRate = useCallback((symbol: string) => {
-    const updatedAt = freshRateUpdatedAtRef.current[symbol] ?? 0
-    return updatedAt > 0 && Date.now() - updatedAt <= 10_000
-  }, [])
-  const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const selectedSymbol = selectedQuote?.symbol
+  useEffect(() => {
+    if (!selectedSymbol || !history.length) return
+    setPairs(current => {
+      const next = current.map(pair => pair.symbol === selectedSymbol ? { ...pair, candles: history } : pair)
+      pairsRef.current = next
+      return next
+    })
+  }, [history, selectedSymbol])
   const swapIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastIdRef       = useRef(0)
 
@@ -2006,151 +2011,17 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     return () => clearInterval(freshnessTimer)
   }, [hasFreshRate])
 
-  // ── Fetch candles ─���─────────────────────────────────────���──────────────────
-  const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
-    const key = `${sym}|${tf}`
-    const requestId = ++candleRequestRef.current
-    const cached = candleCache[key]
-    if (cached?.length) {
-      setPairs(prev => {
-        const updated = prev.map(pair => pair.symbol === sym ? { ...pair, candles: cached } : pair)
-        pairsRef.current = updated
-        return updated
-      })
-    }
-    setCandleLoading(true)
-    try {
-      let res: Response | null = null
-      let json: Record<string, unknown> | null = null
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        try {
-          res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}&_=${Date.now()}`, { cache: "no-store" })
-          json = await res.json().catch(() => null)
-          if (res.ok && Array.isArray(json?.candles) && json.candles.length > 0) break
-        } catch {
-          if (attempt === 1) throw new Error("Candle provider unavailable")
-        }
-        if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 800))
-      }
-      if (!res) throw new Error("Candle provider unavailable")
-      if (!json || typeof json !== "object") throw new Error(`Invalid candles response (${res.status})`)
-      // A provider timeout is not a terminal UI error. The route can return a
-      // stale snapshot or an empty retry response while the live feed recovers.
-      if (!res.ok && !Array.isArray(json?.candles)) throw new Error(String(json?.error ?? `HTTP ${res.status}`))
-      if (json?.error && (!Array.isArray(json.candles) || json.candles.length === 0)) {
-        if (cached?.length) {
-          setCandleError("Showing cached candles — reconnecting to live history.")
-          return
-        }
-        throw new Error(String(json.error))
-      }
-      if (requestId !== candleRequestRef.current) return
-      const historicalCandles: Candle[] = Array.isArray(json.candles)
-        ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
-        : []
-      if (historicalCandles.length === 0) throw new Error("Provider returned no usable candles")
-      // Keep historical OHLC values exactly as returned by the selected
-      // provider. The live-tick effect below updates only the active candle.
-      const candles = historicalCandles
-      setCandleError(null)
-      setCandleCache(prev => ({ ...prev, [key]: candles }))
-      setPairs(prev => {
-        const updated = prev.map(p => p.symbol === sym ? { ...p, candles } : p)
-        pairsRef.current = updated
-        return updated
-      })
-      setSelectedPair(prev => {
-        if (!prev || prev.symbol !== sym) return prev
-        return pairsRef.current.find(p => p.symbol === sym) ?? prev
-      })
-      setCandleError(json.source === "stale" ? "Showing cached candles — reconnecting to live history." : json.source === "offline" ? "Live candle history unavailable — retrying." : null)
-    } catch (error) {
-      if (requestId !== candleRequestRef.current) return
-      console.error("[v0] Candle refresh failed:", error)
-      // Never imply a synthetic/recovery series is live. Keep retrying and
-      // expose the upstream state until genuine historical candles return.
-      setCandleError(cached?.length ? "Showing cached candles — retrying live history." : "Live candle history unavailable — retrying provider.")
-    } finally {
-      if (requestId === candleRequestRef.current) setCandleLoading(false)
-    }
-  }, [candleCache])
-
-  // ── Init ───────────────────────────────────────────────────────────────��───
   useEffect(() => {
-  const init: ForexPair[] = PAIRS_CONFIG.map(p => ({
-    symbol: p.symbol, base: p.base, quote: p.quote,
-    bid: 0, ask: 0, change: 0, high: 0, low: 0, open: 0,
-    rateTimestamp: 0, quoteSource: undefined, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002, candles: [],
-  }))
-    setPairs(init); pairsRef.current = init
-    const defaultPair = init.find(pair => pair.symbol === "XAU/USD") ?? init[0]
-    setSelectedPair(defaultPair); setLoading(false)
-    fetchCandles(defaultPair.symbol, "5M")
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const initialPairs: ForexPair[] = PAIRS_CONFIG.map(p => ({
+      symbol: p.symbol, base: p.base, quote: p.quote,
+      bid: 0, ask: 0, change: 0, high: 0, low: 0, open: 0,
+      rateTimestamp: 0, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002, candles: [],
+    }))
+    pairsRef.current = initialPairs
+    setPairs(initialPairs)
+    setSelectedPair(initialPairs.find(pair => pair.symbol === "XAU/USD") ?? initialPairs[0])
+    setLoading(false)
   }, [])
-
-  // ── Re-fetch candles when pair/TF changes ──��──────────���────�������──────────��������������───
-  useEffect(() => {
-    if (!selectedPair) return
-    fetchCandles(selectedPair.symbol, timeframe)
-    const refreshMs: Record<TimeFrame, number> = {
-      // Refresh the 1-minute history frequently enough to pick up the next
-      // server candle while live ticks keep the active candle moving between
-      // snapshots. Wider frames stay on lighter polling intervals.
-      "1M": 15_000, "5M": 3_000, "15M": 15_000, "30M": 30_000, "1H": 60_000, "4H": 120_000, "1D": 300_000, "1W": 900_000,
-    }
-  const ms = candleError ? 5_000 : (refreshMs[timeframe] ?? 60_000)
-  const retry = () => { void fetchCandles(selectedPair.symbol, timeframe) }
-  candleIntervalRef.current = setInterval(retry, ms)
-    return () => { if (candleIntervalRef.current) clearInterval(candleIntervalRef.current) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPair?.symbol, timeframe, candleError])
-
-  // ── Live-tick last candle ���───────────────────────────����────��────────────────
-  useEffect(() => {
-    if (!selectedPair || !hasFreshRate(selectedPair.symbol) || !Array.isArray(selectedPair.candles) || selectedPair.candles.length === 0) return
-    const mid = (selectedPair.bid + selectedPair.ask) / 2
-    if (!Number.isFinite(mid) || mid === 0) return
-    const quoteTimestamp = selectedPair.rateTimestamp > 0 ? selectedPair.rateTimestamp : Date.now()
-    if (Date.now() - quoteTimestamp > 90_000 || quoteTimestamp > Date.now() + 10_000) return
-    setPairs(prev => {
-      const updated = prev.map(p => {
-        if (p.symbol !== selectedPair.symbol || !Array.isArray(p.candles) || p.candles.length === 0) return p
-        const liveMid = (p.bid + p.ask) / 2
-        if (!Number.isFinite(liveMid) || liveMid === 0) return p
-        const d = decimals(p.symbol)
-        const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "30M" ? 1800 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : timeframe === "1W" ? 604800 : 86400
-        const nowSeconds = Math.floor(quoteTimestamp / 1000)
-        const bucketOffset = timeframe === "1W" ? 4 * 86400 : 0
-        const currentBucket = Math.floor((nowSeconds - bucketOffset) / intervalSeconds) * intervalSeconds + bucketOffset
-        const nc = [...p.candles]
-        const last = { ...nc[nc.length - 1] }
-        const lastTimestamp = normalizeTimestamp(last.ts ?? last.time) / 1000
-        const lastBucket = Number.isFinite(lastTimestamp) && lastTimestamp > 0
-          ? Math.floor((lastTimestamp - bucketOffset) / intervalSeconds) * intervalSeconds + bucketOffset
-          : 0
-        const price = parseFloat(liveMid.toFixed(d))
-        if (lastBucket > 0 && currentBucket < lastBucket) return p
-        if (lastBucket > 0 && currentBucket > lastBucket) {
-          nc.push({ time: new Date(currentBucket * 1000).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }), open: price, high: price, low: price, close: price, volume: 0, ts: currentBucket })
-          if (nc.length > 150) nc.shift()
-        } else {
-          last.close = price
-          last.high  = Math.max(last.high ?? price, price)
-          last.low   = Math.min(last.low ?? price, price)
-          if (!Number.isFinite(lastTimestamp) || lastTimestamp <= 0) last.ts = currentBucket
-          nc[nc.length - 1] = last
-        }
-        return { ...p, candles: nc }
-      })
-      pairsRef.current = updated
-      return updated
-    })
-    setSelectedPair(prev => {
-      if (!prev) return prev
-      return pairsRef.current.find(p => p.symbol === prev.symbol) ?? prev
-    })
-  }, [selectedPair?.symbol, selectedPair?.bid, selectedPair?.ask, selectedPair?.rateTimestamp, timeframe, hasFreshRate])
 
   // ─��� Overnight swap accrual (every 60s, proportional) ───���──────────────────
   useEffect(() => {
@@ -3231,7 +3102,7 @@ const maxLeverage = 100
     { id: "sell", label: "Quick SELL at market", hint: "Open a short position at the current bid", icon: TrendingDown, shortcut: "S", action: () => { if (!tradingLocked && selectedPair && balanceLoaded) quickTrade("SELL") } },
     { id: "close-all", label: "Close all positions", hint: "Manually close every open trade", icon: X, shortcut: "X", action: () => { openTrades.forEach(t => closeTrade(t.id)) } },
     { id: "cancel-pending", label: "Cancel all pending orders", hint: "Remove every working limit/stop order", icon: Clock, action: () => { pendingOrders.forEach(o => cancelPending(o.id)) } },
-    { id: "refresh", label: "Refresh market data", hint: "Re-fetch rates and candles", icon: RefreshCw, action: () => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) } },
+    { id: "refresh", label: "Refresh market data", hint: "Re-fetch rates and candles", icon: RefreshCw, action: () => { void fetchRates(); void refreshCandles() } },
     { id: "theme", label: isDarkTheme ? "Switch to light theme" : "Switch to dark theme", hint: "Toggle the terminal color scheme", icon: isDarkTheme ? Sun : Moon, action: () => setIsDarkTheme(v => !v) },
     { id: "chart-grid", label: chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart", hint: "Toggle the institutional multi-asset view", icon: chartLayout === "single" ? Grid3x3 : Square, action: () => setChartLayout(v => v === "single" ? "grid" : "single") },
     { id: "panel-positions", label: "Show open positions", hint: "Open the positions window", icon: Layers, action: () => openActivityPanel("positions") },
@@ -3413,8 +3284,7 @@ const maxLeverage = 100
 	            setPairSearch("")
 	            setShowPairSearch(false)
 	            setMobileTab("chart")
-	            fetchCandles(match.symbol, timeframe)
-	          }
+		          }
 	        }}
 	        instruments={pairs.map(pair => ({
 	          symbol: pair.symbol,
@@ -3505,7 +3375,7 @@ const maxLeverage = 100
           const isSelected = selectedPair?.symbol === pair.symbol
           const up = pair.change >= 0
           return (
-            <button key={pair.symbol} type="button" onClick={() => { const next = pairsRef.current.find(item => item.symbol === pair.symbol) ?? pair; setSelectedPair({ ...next, candles: candleCache[`${next.symbol}|${timeframe}`] ?? [] }); fetchCandles(next.symbol, timeframe); setMobileTab("chart") }} className={`reference-watch-card shrink-0 group relative ${isSelected ? "is-selected" : ""}`}>
+            <button key={pair.symbol} type="button" onClick={() => { setSelectedPair(pair); setMobileTab("chart") }} aria-pressed={isSelected} className={`reference-watch-card shrink-0 group relative ${isSelected ? "is-selected" : ""}`}>
               <span
                 role="button"
                 aria-label={`Remove ${pair.symbol} from watchlist`}
@@ -3828,7 +3698,7 @@ const maxLeverage = 100
                           <button key={p.symbol}
                             type="button"
                             aria-current={isSelected ? "true" : undefined}
-                            onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe); setMobileTab("chart") }}
+                            onClick={() => { setSelectedPair(p); setMobileTab("chart") }}
                             className="w-full mw-row"
                             style={{
                               background: isSelected ? `linear-gradient(90deg,${pCc.bg},rgba(0,0,0,0))` : "transparent",
@@ -3925,8 +3795,7 @@ const maxLeverage = 100
 		                        onChange={event => {
 		                          const match = pairsRef.current.find(pair => pair.symbol === event.currentTarget.value)
 		                          if (!match) return
-		                          setSelectedPair({ ...match, candles: candleCache[`${match.symbol}|${timeframe}`] ?? [] })
-		                          void fetchCandles(match.symbol, timeframe)
+setSelectedPair(match)
 		                        }}
 		                      >
 		                        {pairs.map(pair => (
@@ -3948,6 +3817,12 @@ const maxLeverage = 100
                     const cc = CATEGORY_COLOR[cat]
                     return <span className="terminal-market-dock-category text-[8px] font-black px-1.5 py-0.5 uppercase tracking-wider rounded" style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}` }}>{cat}</span>
                   })()}
+                  <div className={mobileControlsStyles.quoteSummary}>
+                    <span className={mobileControlsStyles.quotePrice}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                    <span className={mobileControlsStyles.feedLabel} data-live={hasFreshRate(selectedPair.symbol)}>
+                      {hasFreshRate(selectedPair.symbol) ? "Live quote" : selectedPair.bid > 0 ? "Last quote" : "Awaiting quote"}
+                    </span>
+                  </div>
                   <span className="terminal-market-dock-quote-price price-mono text-sm font-black" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
                   <span className="terminal-market-dock-quote-change price-mono text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: isUp ? "#10b981" : "#ef4444", background: isUp ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
                 </div>
@@ -3991,7 +3866,6 @@ const maxLeverage = 100
 	                    <Grid3x3 className="size-4" aria-hidden="true" /> Tools
 	                  </button>
 
-	                  {candleLoading && <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />}
 	                </div>
 	              </div>
 	            </div>
@@ -4011,7 +3885,7 @@ const maxLeverage = 100
               >
 	            <div className="relative flex-1 min-h-[460px] h-[58vh] max-h-[620px] min-w-0 mobile-terminal-chart-wrap chart-surface">
 	              {selectedPair && chartLayout === "single" ? (
-	                <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartReloadKey}`} fallback={
+	                <ErrorBoundary key={`${selectedPair.symbol}|${isDarkTheme}|${chartReloadKey}`} fallback={
 	                  <div className="chart-silent-error">
 	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={chartExpanded} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} actionsHost={chartActionsHost} /> : null}
 	                  </div>
@@ -4019,7 +3893,6 @@ const maxLeverage = 100
   <div className="terminal-single-chart-stack h-full min-h-0 w-full flex-1">
   <div className="terminal-native-chart-panel h-full min-h-0 w-full flex-1">
   <TradingChart
-  key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
   candles={selectedPair.candles}
   sym={selectedPair.symbol}
   tf={timeframe}
@@ -4030,7 +3903,10 @@ const maxLeverage = 100
   buyPrice={selectedPair.ask}
   sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
-  marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
+  marketStatus={hasFreshRate(selectedPair.symbol) ? "live" : marketError ? "reconnecting" : "connecting"}
+  historyStatus={historyStatus}
+  isRefreshingHistory={isRefreshingCandles}
+  onRetryHistory={() => { void refreshCandles() }}
   actionsHost={chartActionsHost}
   />
   </div>
@@ -4043,8 +3919,7 @@ const maxLeverage = 100
 	                  onSelect={(sym) => {
 	                    const p = pairs.find(x => x.symbol === sym)
 	                    if (p) {
-	                      setSelectedPair(p)
-	                      fetchCandles(sym, timeframe)
+setSelectedPair(p)
 	                    }
 	                  }}
 	                  tickCount={tickCount}
@@ -4058,33 +3933,21 @@ const maxLeverage = 100
 	            </div>
 
 	            {/* ── Timeframe Selector Bar (Docked at Bottom of Chart) ── */}
-	            <div className="shrink-0 flex items-center justify-between gap-1.5 px-3 py-1.5 bg-[#070e1a] border-t border-b border-[#1a293d] overflow-x-auto terminal-scroll">
-	              <div className="flex items-center gap-1">
-	                {(["1M", "5M", "15M", "30M", "1H", "4H", "1D", "1W"] as TimeFrame[]).map(tf => {
-	                  const active = timeframe === tf
-	                  return (
-	                    <button
-	                      key={tf}
-	                      type="button"
-	                      onClick={() => setTimeframe(tf)}
-	                      aria-pressed={active}
-	                      className={`px-2.5 py-1 text-[10px] font-black tracking-wide rounded-md transition-all shrink-0 ${
-	                        active
-	                          ? "bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 shadow-[0_0_10px_rgba(34,211,238,0.25)]"
-	                          : "bg-white/[0.04] text-slate-400 border border-white/[0.08] hover:text-slate-200 hover:bg-white/[0.08]"
-	                      }`}
-	                    >
-	                      {tf}
-	                    </button>
-	                  )
-	                })}
-	              </div>
-
-	              {/* Provider Quick Toggle */}
-	              <div className="flex items-center gap-1 shrink-0 ml-1">
-
-	              </div>
-	            </div>
+              <div className={mobileControlsStyles.timeframeStrip}>
+                <div className={mobileControlsStyles.timeframeGroup} role="group" aria-label="Chart timeframe">
+                  {CHART_TIMEFRAMES.map(tf => (
+                    <button
+                      key={tf}
+                      type="button"
+                      onClick={() => setTimeframe(tf)}
+                      aria-pressed={timeframe === tf}
+                      className={mobileControlsStyles.timeframeButton}
+                    >
+                      {tf}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
 	            {isCompactViewport && instrumentOverviewPanel}
 

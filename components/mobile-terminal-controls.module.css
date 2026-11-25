@@ -1,3 +1,125 @@
+.quoteSummary {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.quotePrice {
+  color: var(--terminal-graphite-text);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.feedLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  color: var(--phone-muted, var(--terminal-graphite-text));
+  font-size: 14px;
+}
+
+.feedLabel::before {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.feedLabel[data-live="true"] {
+  color: var(--brand-primary);
+}
+
+.timeframeStrip {
+  display: flex;
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  overflow-x: auto;
+  border-block: 1px solid var(--terminal-graphite-border);
+  background: var(--terminal-graphite-surface);
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+}
+
+.timeframeGroup {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.timeframeStrip .timeframeButton {
+  min-inline-size: 38px;
+  min-block-size: 36px;
+  padding-inline: 5px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: color-mix(in srgb, var(--terminal-graphite-text) 76%, var(--terminal-graphite-surface));
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.surface .timeframeStrip .timeframeButton[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--brand-primary) 30%, var(--terminal-graphite-border));
+  background: color-mix(in srgb, var(--brand-primary) 14%, var(--terminal-graphite-surface)) !important;
+  color: var(--brand-primary) !important;
+}
+
+.timeframeStrip .timeframeButton:focus-visible,
+.historyRetry:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: -2px;
+}
+
+.historyOverlay {
+  color: var(--terminal-graphite-text);
+  background: var(--terminal-graphite-surface);
+}
+
+.historyIcon {
+  color: var(--brand-primary);
+}
+
+.historyHint {
+  color: color-mix(in srgb, var(--terminal-graphite-text) 75%, var(--terminal-graphite-surface));
+}
+
+.historyRetry {
+  border: 1px solid var(--terminal-graphite-border);
+  color: var(--brand-primary);
+}
+
+@media (max-width: 767px) {
+  :global(.reference-terminal:not(.is-chart-expanded)) :global(.terminal-market-dock-quote) > .quoteSummary.quoteSummary {
+    display: inline-flex !important;
+  }
+
+  .surface :global(.terminal-trade-scroll) .timeframeStrip .timeframeButton {
+    min-inline-size: 40px;
+    min-height: 44px !important;
+  }
+}
+
+@media (hover: hover) {
+  .timeframeStrip .timeframeButton:hover,
+  .historyRetry:hover {
+    background: color-mix(in srgb, var(--brand-primary) 9%, var(--terminal-graphite-surface));
+    color: var(--terminal-graphite-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeframeStrip .timeframeButton {
+    transition: none;
+  }
+}
+
 .indicatorTrigger.indicatorTrigger {
   display: none !important;
 }
