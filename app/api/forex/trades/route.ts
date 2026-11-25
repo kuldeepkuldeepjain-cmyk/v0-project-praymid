@@ -898,15 +898,23 @@ export async function PATCH(req: NextRequest) {
         if (fundedAccount) {
           const fundedInitial = Number(participant.funded_initial_balance)
             || getFundedBaseAmount(balanceBefore, participant.funded_amount)
-          const remainingMarginResult = await client.query(
-            `SELECT COALESCE(SUM(margin), 0) AS amount FROM forex_trades
+          const remainingPositionsResult = await client.query(
+            `SELECT pair, direction, lot_size, open_price, margin, swap
+             FROM forex_trades
              WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
             [participant_email],
           )
-          fundedEquity += Number(remainingMarginResult.rows[0]?.amount) || 0
+          const remainingPnl = getChallengeOpenPositionPnl(remainingPositionsResult.rows, challengeRates)
+          if (!remainingPnl.complete) {
+            throw Object.assign(new Error("Fresh quotes are required to verify funded-account equity."), { status: 503 })
+          }
+          const remainingMargin = remainingPositionsResult.rows.reduce(
+            (sum: number, position: { margin: number | string }) => sum + (Number(position.margin) || 0),
+            0,
+          )
+          fundedEquity = Number((candidateBalanceAfter + remainingMargin + remainingPnl.pnl).toFixed(2))
           fundedBreach = wasFundedBreached
-            || closeReason === "account_breach"
-            || isFundedDrawdownBreached(participant.account_type, fundedInitial, candidateBalanceAfter, Number(remainingMarginResult.rows[0]?.amount) || 0)
+            || isFundedDrawdownBreached(participant.account_type, fundedInitial, candidateBalanceAfter + remainingPnl.pnl, remainingMargin)
         }
         if (isChallengeAccount && participant.challenge_status !== "active") throw Object.assign(new Error("Challenge trading is not active."), { status: 403 })
         let balanceAfter = fundedAccount && fundedBreach ? 0 : candidateBalanceAfter
