@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useIsMobile } from "@/hooks/use-mobile"
 import QRCode from "qrcode"
+import useSWR from "swr"
+import { buildUpiPaymentUri } from "@/lib/upi-payment"
 import { ArrowLeft, X, Wallet, CheckCircle2, AlertCircle, Loader2, Send, Landmark } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -48,6 +50,16 @@ function logFundingActivity(payload: FundingActivityPayload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   }).catch(() => undefined)
+}
+
+async function loadPaymentSettings(url: string): Promise<Record<string, string>> {
+  const response = await fetch(url, { cache: "no-store" })
+  if (!response.ok) throw new Error("Payment details could not be loaded. Please reopen checkout to retry.")
+  const data = await response.json()
+  if (!data || typeof data !== "object" || Array.isArray(data) || data.success !== true) throw new Error("Payment details are unavailable.")
+  const values = Object.fromEntries(Object.entries(data).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+  values.usdt_inr_rate = String(data.usdt_inr_rate ?? "")
+  return values
 }
 
 function calculatePromoDiscount(baseAmount: number, promo: AppliedPromo, inrRate: number) {
@@ -99,16 +111,15 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   const [applyingPromo, setApplyingPromo] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20" | "INR">("ALL")
   const [paymentMethod, setPaymentMethod] = useState<"crypto" | "inr">("crypto")
-  const DEFAULT_INR_UPI_ID = "elitefun@slc"
-  const [inrDetails, setInrDetails] = useState<{ upiId: string | null; bankName: string | null; accountNumber: string | null; ifsc: string | null; holderName: string | null }>({ upiId: DEFAULT_INR_UPI_ID, bankName: null, accountNumber: null, ifsc: null, holderName: null })
-  const [inrRate, setInrRate] = useState(104)
-  const [inrQrDataUrl, setInrQrDataUrl] = useState<string | null>(null)
-  const [inrQrExpiresAt, setInrQrExpiresAt] = useState<number | null>(null)
-  const [inrSecondsRemaining, setInrSecondsRemaining] = useState(0)
-  const [loadingAddress, setLoadingAddress] = useState(false)
+  const { data: paymentSettings, error: settingsError, isLoading: loadingAddress, isValidating: refreshingSettings, mutate: retrySettings } = useSWR(isOpen ? "/api/public/settings" : null, loadPaymentSettings, { revalidateOnFocus: false, shouldRetryOnError: false })
+  const settings = settingsError ? undefined : paymentSettings
+  const walletAddresses = { TRC20: settings?.trc20_address || null, BEP20: settings?.bep20_address || settings?.topup_address || null, ERC20: settings?.erc20_address || null }
+  const inrDetails = { upiId: settings?.inr_upi_id?.trim() || null, bankName: settings?.inr_bank_name || null, accountNumber: settings?.inr_account_number || null, ifsc: settings?.inr_ifsc_code || null, holderName: settings?.inr_account_holder_name || null }
+  const configuredInrRate = Number(settings?.usdt_inr_rate)
+  const hasValidInrRate = Number.isFinite(configuredInrRate) && configuredInrRate > 0
+  const inrRate = hasValidInrRate ? configuredInrRate : 104
   const [checkingFundedTier, setCheckingFundedTier] = useState(false)
   const [fundedTierEligibility, setFundedTierEligibility] = useState<boolean | null>(null)
   const [fundedRestartRequired, setFundedRestartRequired] = useState(false)
@@ -146,9 +157,6 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     setErrorMessage("")
     setNetwork("ALL")
     setPaymentMethod("crypto")
-    setInrQrDataUrl(null)
-    setInrQrExpiresAt(null)
-    setInrSecondsRemaining(0)
     setFundingMode("actual")
     setFundedTierEligibility(null)
     setFundedRestartRequired(false)
@@ -200,21 +208,6 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
       }
     }
     fetchFundedTierEligibility()
-    const fetchAddress = async () => {
-      setLoadingAddress(true)
-      try {
-        const res = await fetch("/api/public/settings")
-        const data = await res.json()
-        setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null, ERC20: data.erc20_address || null })
-        setInrDetails({ upiId: data.inr_upi_id || DEFAULT_INR_UPI_ID, bankName: data.inr_bank_name || null, accountNumber: data.inr_account_number || null, ifsc: data.inr_ifsc_code || null, holderName: data.inr_account_holder_name || null })
-        setInrRate(Number(data.usdt_inr_rate) > 0 ? Number(data.usdt_inr_rate) : 104)
-      } catch {
-        setWalletAddresses({ TRC20: null, BEP20: null, ERC20: null })
-      } finally {
-        setLoadingAddress(false)
-      }
-    }
-    fetchAddress()
   }, [isOpen, isFundedAccount, isInitialFundedTopUp, openFundedTier, initialAmount, initialFundingMode])
 
   const copyAddress = () => {
@@ -226,47 +219,6 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   }
 
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
-
-  useEffect(() => {
-    if (!isOpen || fundedTierEligibility === null || (fundedRestartRequired && !fundedTierEligibility) || paymentMethod !== "inr" || !inrDetails.upiId || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
-      setInrQrDataUrl(null)
-      setInrQrExpiresAt(null)
-      setInrSecondsRemaining(0)
-      return
-    }
-    const expiresAt = Date.now() + 5 * 60 * 1000
-    const rawAmount = Number(amount)
-    const promoDiscountAmount = appliedPromo ? calculatePromoDiscount(rawAmount, appliedPromo, inrRate) : 0
-    const discountedAmount = Number(Math.max(0, rawAmount - promoDiscountAmount).toFixed(2))
-    const inrAmount = discountedAmount * inrRate
-    setInrQrDataUrl(null)
-    setInrQrExpiresAt(expiresAt)
-    setInrSecondsRemaining(5 * 60)
-    let cancelled = false
-    QRCode.toDataURL(`upi://pay?pa=${encodeURIComponent(inrDetails.upiId)}&pn=${encodeURIComponent(inrDetails.holderName || "Elite Fund")}&am=${inrAmount.toFixed(2)}&cu=INR`, { width: 220, margin: 1 })
-      .then((url) => {
-        if (cancelled) return
-        setInrQrDataUrl(url)
-        const key = `inr:${amount}:${url}`
-        if (!loggedQrEventsRef.current.has(key)) {
-          loggedQrEventsRef.current.add(key)
-          logFundingActivity({ event: "funding_qr_created", paymentMethod: "inr", amount: Number(amount) })
-        }
-      })
-      .catch(() => { if (!cancelled) setInrQrDataUrl(null) })
-    return () => { cancelled = true }
-  }, [isOpen, fundedTierEligibility, fundedRestartRequired, paymentMethod, inrDetails.upiId, inrDetails.holderName, amount, appliedPromo, inrRate])
-
-  useEffect(() => {
-    if (!inrQrExpiresAt) return
-    const updateCountdown = () => setInrSecondsRemaining(Math.max(0, Math.ceil((inrQrExpiresAt - Date.now()) / 1000)))
-    updateCountdown()
-    const timer = window.setInterval(updateCountdown, 1000)
-    return () => window.clearInterval(timer)
-  }, [inrQrExpiresAt])
-
-  const inrQrExpired = paymentMethod === "inr" && inrQrExpiresAt !== null && inrSecondsRemaining <= 0
-  const inrCountdownLabel = `${String(Math.floor(inrSecondsRemaining / 60)).padStart(2, "0")}:${String(inrSecondsRemaining % 60).padStart(2, "0")}`
 
   // Generate a real, scannable QR code for the selected deposit address.
   useEffect(() => {
@@ -324,6 +276,16 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   const expectedCreditAmount = fundingMode === "funded" && parsedAmount in fundedTiers
     ? fundedTiers[parsedAmount as keyof typeof fundedTiers]
     : parsedAmount
+  const inrPaymentUri = isOpen && paymentMethod === "inr" && isAmountValid && hasValidInrRate && !loadingAddress && !settingsError && !applyingPromo && (!promoCode.trim() || appliedPromo) && (fundingMode !== "funded" || canUseFundedTier)
+    ? buildUpiPaymentUri(inrDetails.upiId, inrDetails.holderName, payableAmount * inrRate)
+    : null
+  const onInrQrCreated = useCallback(() => {
+    if (!inrPaymentUri) return
+    const key = `inr:${amount}:${inrPaymentUri}`
+    if (loggedQrEventsRef.current.has(key)) return
+    loggedQrEventsRef.current.add(key)
+    logFundingActivity({ event: "funding_qr_created", paymentMethod: "inr", amount: Number(amount) })
+  }, [amount, inrPaymentUri])
 
   const applyPromoCode = useCallback(async (requestedCode = promoCode) => {
     const normalizedCode = requestedCode.trim().toUpperCase().replace(/\s+/g, "")
@@ -538,7 +500,10 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
                 </FundingSection>
 
                 {fundedTierEligibility !== null && (!fundedRestartRequired || canUseFundedTier) ? (
-                  <FundingPaymentInstructions paymentMethod={paymentMethod} network={network} payableAmount={payableAmount} inrRate={inrRate} inrDetails={inrDetails} inrQrDataUrl={inrQrDataUrl} inrQrExpired={inrQrExpired} inrCountdownLabel={inrCountdownLabel} selectedWalletAddress={selectedWalletAddress} loadingAddress={loadingAddress} qrLoading={qrLoading} qrDataUrl={qrDataUrl} copiedAddress={copiedAddress} onCopyAddress={copyAddress} />
+                  <>
+                    {settingsError && <Alert variant="destructive"><AlertCircle aria-hidden="true" /><AlertDescription className="flex flex-col gap-3"><span>Payment details could not be loaded. Do not send money until the recipient is confirmed.</span><Button type="button" variant="outline" disabled={refreshingSettings} onClick={() => retrySettings()}>{refreshingSettings ? "Retrying…" : "Retry payment details"}</Button></AlertDescription></Alert>}
+                    <FundingPaymentInstructions paymentMethod={paymentMethod} network={network} payableAmount={payableAmount} inrRate={inrRate} inrDetails={inrDetails} inrPaymentUri={inrPaymentUri} onInrQrCreated={onInrQrCreated} selectedWalletAddress={selectedWalletAddress} loadingAddress={loadingAddress} qrLoading={qrLoading} qrDataUrl={qrDataUrl} copiedAddress={copiedAddress} onCopyAddress={copyAddress} />
+                  </>
                 ) : (
                   <Alert><AlertDescription>{fundedRestartRequired ? "Your replacement payment is under review. Payment instructions are hidden to prevent another transfer; your balance stays at $0.00 until approval." : "Checking account eligibility before showing payment instructions."}</AlertDescription></Alert>
                 )}

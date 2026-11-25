@@ -2,7 +2,8 @@
 
 import type { ReactNode } from "react"
 import Image from "next/image"
-import { AlertCircle, CheckCircle2, Clock3, Copy, Loader2, QrCode, ShieldCheck } from "lucide-react"
+import { AlertCircle, CheckCircle2, Copy, Loader2, QrCode, ShieldCheck } from "lucide-react"
+import { FundingUpiPayment } from "@/components/funding-upi-payment"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -37,9 +38,8 @@ interface PaymentInstructionsProps {
   payableAmount: number
   inrRate: number
   inrDetails: { upiId: string | null; bankName: string | null; accountNumber: string | null; ifsc: string | null; holderName: string | null }
-  inrQrDataUrl: string | null
-  inrQrExpired: boolean
-  inrCountdownLabel: string
+  inrPaymentUri: string | null
+  onInrQrCreated: () => void
   selectedWalletAddress: string | null
   loadingAddress: boolean
   qrLoading: boolean
@@ -48,8 +48,7 @@ interface PaymentInstructionsProps {
   onCopyAddress: () => void
 }
 
-export function FundingPaymentInstructions({ paymentMethod, network, payableAmount, inrRate, inrDetails, inrQrDataUrl, inrQrExpired, inrCountdownLabel, selectedWalletAddress, loadingAddress, qrLoading, qrDataUrl, copiedAddress, onCopyAddress }: PaymentInstructionsProps) {
-  const inrAmountLabel = (payableAmount * inrRate).toLocaleString("en-IN", { maximumFractionDigits: 2 })
+export function FundingPaymentInstructions({ paymentMethod, network, inrRate, inrDetails, inrPaymentUri, onInrQrCreated, selectedWalletAddress, loadingAddress, qrLoading, qrDataUrl, copiedAddress, onCopyAddress }: PaymentInstructionsProps) {
 
   return (
     <FundingSection
@@ -59,33 +58,20 @@ export function FundingPaymentInstructions({ paymentMethod, network, payableAmou
     >
       {paymentMethod === "inr" ? (
         <>
-          {inrQrExpired ? (
-            <Alert variant="destructive">
-              <AlertCircle aria-hidden="true" />
-              <AlertTitle>Payment QR expired</AlertTitle>
-              <AlertDescription>Change the amount to generate a fresh QR code.</AlertDescription>
-            </Alert>
-          ) : inrQrDataUrl ? (
-            <div className="flex flex-col items-center gap-3">
-              <div className="funding-qr-well">
-                <Image unoptimized src={inrQrDataUrl} alt={`UPI payment QR for ₹${inrAmountLabel}`} width={192} height={192} />
-              </div>
-              <p className="funding-payment-amount">₹{inrAmountLabel} <span>INR</span></p>
-              <p className="funding-inline-note" role="timer" aria-live="off"><Clock3 className="size-4" aria-hidden="true" />Pay within {inrCountdownLabel}</p>
-            </div>
-          ) : (
-            <div className="funding-qr-empty">
-              <QrCode className="size-8" aria-hidden="true" />
-              <p>Enter a funding amount above to generate your payment QR.</p>
-            </div>
+          {loadingAddress ? <div role="status" aria-label="Loading INR payment details"><Skeleton className="h-48 w-full" /></div> : (
+            <FundingUpiPayment paymentUri={inrPaymentUri} upiId={inrDetails.upiId} payeeName={inrDetails.holderName} onQrCreated={onInrQrCreated} />
           )}
-          <dl className="funding-bank-details">
-            <div><dt>UPI ID</dt><dd className="font-mono">{inrDetails.upiId || "Not configured"}</dd></div>
-            {inrDetails.holderName && <div><dt>Account holder</dt><dd>{inrDetails.holderName}</dd></div>}
-            <div><dt>Account number</dt><dd className="font-mono">{inrDetails.accountNumber || "Not configured"}</dd></div>
-            <div><dt>Bank</dt><dd>{inrDetails.bankName || "Not configured"}</dd></div>
-            <div><dt>IFSC</dt><dd className="font-mono">{inrDetails.ifsc || "Not configured"}</dd></div>
-          </dl>
+          {!loadingAddress && inrDetails.accountNumber && inrDetails.ifsc && (
+            <details>
+              <summary className="cursor-pointer text-sm font-medium">Prefer a bank transfer?</summary>
+              <dl className="funding-bank-details">
+                {inrDetails.holderName && <div><dt>Account holder</dt><dd>{inrDetails.holderName}</dd></div>}
+                <div><dt>Account number</dt><dd className="font-mono">{inrDetails.accountNumber}</dd></div>
+                {inrDetails.bankName && <div><dt>Bank</dt><dd>{inrDetails.bankName}</dd></div>}
+                <div><dt>IFSC</dt><dd className="font-mono">{inrDetails.ifsc}</dd></div>
+              </dl>
+            </details>
+          )}
         </>
       ) : loadingAddress ? (
         <div className="flex flex-col gap-3" role="status" aria-label="Loading deposit address">
