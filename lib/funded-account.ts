@@ -93,7 +93,7 @@ export function isFundedDrawdownBreached(accountType: unknown, initialBalance: u
   const initial = toPositiveNumber(initialBalance)
   const equity = getFundedEquity(initial, availableBalance, committedFunds)
   const breachEquityLevel = getFundedMinimumBalance(initial)
-  return initial > 0 && equity <= breachEquityLevel
+  return initial > 0 && equity < breachEquityLevel
 }
 
 export interface FundedDrawdownSnapshot {
@@ -167,7 +167,7 @@ export function isFundedBalanceBelowMinimum(
   if (!Number.isFinite(availableBalance) || availableBalance < 0 || !baseAmount) return false
 
   // Total equity is available cash plus funds committed to open positions.
-  return totalFunds <= getFundedMinimumBalance(baseAmount)
+  return totalFunds < getFundedMinimumBalance(baseAmount)
 }
 
 export { FUNDED_PLANS }

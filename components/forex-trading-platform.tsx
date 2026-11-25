@@ -1123,7 +1123,7 @@ function SupportCenterPanel() {
   )
 }
 
-// ─── Quote depth view ─────────────────────────────────────────────────────────
+// ─── Quote depth view ─��───────────────────────────────────────────────────────
 
 function OrderDepth({ pair, online }: { pair: ForexPair; online: boolean }) {
   return <DepthOfMarketLadder pair={pair} online={online} />
@@ -1811,7 +1811,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const accountEquity = walletBalance + lockedMargin + totalPnl
   const tradingLocked = isFrozen || terminalLocked
   // The popup is triggered only when live equity crosses into the breach zone.
-  const fundedLossLimitReached = isFundedAccount && balanceLoaded && fundedBaseAmount > 0 && accountEquity <= fundedMinimumBalance
+  const fundedLossLimitReached = isFundedAccount && balanceLoaded && fundedBaseAmount > 0 && accountEquity < fundedMinimumBalance
   const breachConditionWasActiveRef = useRef(false)
 
   const freezeFundedAccount = useCallback(async () => {
@@ -1820,7 +1820,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     try {
       const response = await participantFetch("/api/participant/freeze-account", {
         method: "POST",
-        body: JSON.stringify({ email: participantEmail, equity: accountEquity }),
+        body: JSON.stringify({ email: participantEmail }),
       })
       if (!response.ok) throw new Error("Breach update failed")
       setWalletBalance(0)
@@ -1832,7 +1832,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       freezeRequestStarted.current = false
       showToast("error", "Could not confirm the funded plan breach. Please refresh and try again.")
     }
-  }, [accountEquity, fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, onBalanceUpdated, participantEmail, showToast])
+  }, [fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, onBalanceUpdated, participantEmail, showToast])
 
   // ── Trade persistence API. The UI remains optimistic, but failed writes are
   //    retried once and surfaced instead of being silently discarded. ─────────
