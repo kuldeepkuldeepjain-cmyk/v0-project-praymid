@@ -29,6 +29,7 @@ import { AccountBreachNotice } from "@/components/account-breach-notice"
 import { getAccountBreach } from "@/lib/account-breach"
 
 import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
+import { ParticipantSessionAtlas } from "@/components/participant-session-atlas"
 import { ParticipantDashboardHero } from "@/components/participant-dashboard-hero"
 import { DashboardChallengeOffer } from "@/components/dashboard-challenge-offer"
 import { ParticipantMarketTicker } from "@/components/participant-market-ticker"
@@ -2049,6 +2050,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             ) : (
               <section className="participant-home-workspace mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 font-sans md:px-7 md:py-8" aria-label="Challenge workspace">
                 <ParticipantDashboardHero displayName={displayName} isChallenge onExploreTerminal={openTradingTerminal} />
+  <ParticipantSessionAtlas />
                 <ChallengeFundedUpgradeStrip onChoosePlan={(fee) => {
                   setTopUpIsFundedAccount(true)
                   setIsInitialFundedTopUp(true)

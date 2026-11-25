@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import { ParticipantSessionAtlas } from "@/components/participant-session-atlas"
 import { ParticipantDashboardHero } from "@/components/participant-dashboard-hero"
 
 interface ParticipantOnboardingDashboardProps {
@@ -159,6 +160,8 @@ export function ParticipantOnboardingDashboard({
           </CardFooter>
         </Card>
       </div>
+
+      <ParticipantSessionAtlas />
 
       <section className="participant-command-metrics" aria-label="Performance overview">
         {metrics.map(({ label, value, detail, icon: Icon }) => (
