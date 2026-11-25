@@ -96,9 +96,9 @@ export async function POST(request: NextRequest) {
       }
       return failure("No account matches this Google email. Choose Create account to register with Google.", 404)
     }
-    const fundedAccountBreached = participant.funded_breach_status === "breached"
-    if (participant.is_deleted || participant.is_frozen || (participant.account_frozen && !fundedAccountBreached) || participant.is_active === false || participant.otp_verified === false || participant.status !== "active") {
-      return failure("Your account is not eligible to sign in. Complete verification or contact support.", 403)
+    // Account lifecycle and trading restrictions must not prevent authenticated dashboard access.
+    if (participant.is_deleted) {
+      return failure("Account is unavailable", 403)
     }
     await startParticipantLogin(participant, context)
 

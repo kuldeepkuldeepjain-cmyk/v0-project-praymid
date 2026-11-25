@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
     )
 
     if (!participant?.pin_hash || !(await bcrypt.compare(value, participant.pin_hash))) return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
-    const fundedAccountBreached = participant.funded_breach_status === "breached"
-    if (participant.is_deleted || participant.is_frozen || (participant.account_frozen && !fundedAccountBreached) || participant.is_active === false || participant.otp_verified === false || participant.status !== "active" || await getActiveRestriction(participant.email, "login")) {
+    // Account lifecycle and trading restrictions must not prevent authenticated dashboard access.
+    if (participant.is_deleted || await getActiveRestriction(participant.email, "login")) {
       return NextResponse.json({ success: false, error: "Account is unavailable" }, { status: 403 })
     }
 
