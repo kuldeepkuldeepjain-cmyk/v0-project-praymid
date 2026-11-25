@@ -12980,3 +12980,70 @@ body:has(.elite-terminal-shell) {
     border-top: 1px solid #243752;
   }
 }
+
+/* Shared experience refinement: restrained blue accents, crisp surfaces, and deliberate interaction feedback. */
+.elite-landing .elite-hero-art {
+  opacity: .72;
+  filter: saturate(.78) contrast(1.08);
+}
+.elite-landing .elite-hero-scrim {
+  background:
+    linear-gradient(90deg, var(--elite-bg) 0%, color-mix(in srgb, var(--elite-bg) 94%, transparent) 32%, color-mix(in srgb, var(--elite-bg) 66%, transparent) 62%, color-mix(in srgb, var(--elite-bg) 34%, transparent) 100%),
+    linear-gradient(0deg, var(--elite-bg) 0%, color-mix(in srgb, var(--elite-bg) 28%, transparent) 30%, transparent 72%);
+}
+.elite-landing .elite-market-card {
+  border-color: color-mix(in srgb, var(--elite-brand) 28%, var(--elite-line));
+  background: color-mix(in srgb, var(--elite-surface) 94%, var(--elite-bg));
+  box-shadow: 0 28px 72px color-mix(in srgb, var(--elite-bg) 76%, transparent), inset 0 1px color-mix(in srgb, white 5%, transparent);
+}
+.elite-landing .elite-feature-card,
+.elite-landing .elite-step-card,
+.elite-landing .elite-account-card,
+.elite-landing .elite-trust-action {
+  border-color: color-mix(in srgb, var(--elite-brand) 14%, var(--elite-line));
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+.elite-landing .elite-feature-card:hover,
+.elite-landing .elite-step-card:hover,
+.elite-landing .elite-account-card:hover,
+.elite-landing .elite-trust-action:hover {
+  border-color: color-mix(in srgb, var(--elite-brand) 46%, var(--elite-line));
+  box-shadow: 0 16px 36px color-mix(in srgb, #020817 38%, transparent), inset 0 1px color-mix(in srgb, var(--elite-brand) 12%, transparent);
+}
+.elite-landing .elite-market-row {
+  transition: background-color 160ms ease, padding-inline 160ms ease;
+}
+.elite-landing .elite-market-row:hover {
+  padding-inline: .65rem;
+  background: color-mix(in srgb, var(--elite-brand) 5%, transparent);
+}
+.elite-landing .elite-button-primary {
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--elite-brand) 22%, transparent), inset 0 1px color-mix(in srgb, white 24%, transparent);
+}
+.elite-landing .elite-button-primary:hover {
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--elite-brand) 30%, transparent), inset 0 1px color-mix(in srgb, white 30%, transparent);
+}
+.participant-command-hero {
+  border-color: color-mix(in srgb, var(--brand-primary) 24%, var(--terminal-graphite-border));
+  box-shadow: 0 24px 56px color-mix(in srgb, #020817 40%, transparent), inset 0 1px color-mix(in srgb, var(--brand-primary) 12%, transparent);
+}
+.participant-command-hero-art { opacity: .58; filter: saturate(.72) contrast(1.08); }
+.participant-command-hero::after {
+  background: linear-gradient(90deg, var(--background) 0%, color-mix(in srgb, var(--background) 95%, transparent) 42%, color-mix(in srgb, var(--background) 48%, transparent) 100%), linear-gradient(0deg, color-mix(in srgb, var(--background) 68%, transparent), transparent 56%);
+}
+.participant-command-wallet,
+.participant-command-actions,
+.participant-command-readiness {
+  box-shadow: 0 16px 40px color-mix(in srgb, #020817 28%, transparent), inset 0 1px color-mix(in srgb, var(--brand-primary) 9%, transparent);
+}
+.participant-command-shortcut { box-shadow: 0 8px 22px color-mix(in srgb, #020817 22%, transparent), inset 0 1px color-mix(in srgb, var(--brand-primary) 10%, transparent); }
+.participant-home-workspace :is(a, button):focus-visible { outline-offset: 3px; }
+@media (max-width: 767px) {
+  .elite-landing .elite-hero-art { opacity: .46; background-position: 58% center; }
+  .elite-landing .elite-hero-scrim {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--elite-bg) 96%, transparent), color-mix(in srgb, var(--elite-bg) 82%, transparent)), linear-gradient(0deg, var(--elite-bg), transparent 64%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .elite-landing .elite-market-row { transition: none; }
+}

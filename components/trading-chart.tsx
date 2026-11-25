@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
+import { CandlestickChart, RefreshCw } from "lucide-react"
+import type { HistoryStatus } from "@/hooks/use-terminal-candles"
 import { MobileChartIndicators, type ChartIndicatorKey as IndicatorKey } from "@/components/mobile-chart-indicators"
 import { TradingChartPriceScale } from "@/components/trading-chart-price-scale"
 import mobileControlsStyles from "./mobile-terminal-controls.module.css"
@@ -187,12 +189,18 @@ export function TradingChart({
   sellPrice,
   darkTheme = false,
   marketStatus = "connecting",
+  historyStatus = "loading",
+  isRefreshingHistory = false,
+  onRetryHistory,
   actionsHost,
   }: {
   candles: Candle[] | null | undefined
   sym: string | null | undefined
   tf?: string
   marketStatus?: "live" | "reconnecting" | "connecting"
+  historyStatus?: HistoryStatus
+  isRefreshingHistory?: boolean
+  onRetryHistory?: () => void
   actionsHost?: HTMLElement | null
   openTrades?: OpenTrade[]
   onExpand?: () => void
@@ -212,8 +220,7 @@ export function TradingChart({
   // Series refs
   const candleSerRef  = useRef<ISeriesApi<"Candlestick"> | null>(null)
   const volSerRef     = useRef<ISeriesApi<"Histogram"> | null>(null)
-  const candleCountRef = useRef(0)
-  const lastCandleTimeRef = useRef<number | null>(null)
+  const renderedSeriesRef = useRef<{ timeframe: string; candles: CandlestickData[]; volume: HistogramData[] } | null>(null)
   const userAdjustedViewRef = useRef(false)
   const autoFitRequestedRef = useRef(true)
   const ema9Ref       = useRef<ISeriesApi<"Line"> | null>(null)
@@ -307,12 +314,12 @@ export function TradingChart({
     return { min: low - range * padding, max: high + range * padding, atr, range }
   }, [candleData, dec])
 
-  const ema9d  = useMemo(() => calcEMA(closes, 9),  [closes])
-  const ema21d = useMemo(() => calcEMA(closes, 21), [closes])
-  const ema50d = useMemo(() => calcEMA(closes, 50), [closes])
-  const bbd    = useMemo(() => calcBB(closes),       [closes])
-  const rsid   = useMemo(() => calcRSI(closes),      [closes])
-  const macdd  = useMemo(() => calcMACD(closes),     [closes])
+  const ema9d  = useMemo(() => indicators.ema9 ? calcEMA(closes, 9) : null, [closes, indicators.ema9])
+  const ema21d = useMemo(() => indicators.ema21 ? calcEMA(closes, 21) : null, [closes, indicators.ema21])
+  const ema50d = useMemo(() => indicators.ema50 ? calcEMA(closes, 50) : null, [closes, indicators.ema50])
+  const bbd    = useMemo(() => indicators.bb ? calcBB(closes) : null, [closes, indicators.bb])
+  const rsid   = useMemo(() => indicators.rsi ? calcRSI(closes) : null, [closes, indicators.rsi])
+  const macdd  = useMemo(() => indicators.macd ? calcMACD(closes) : null, [closes, indicators.macd])
 
   function toLineData(arr: (number | null)[]): LineData[] {
     const seen = new Set<number>()
@@ -536,9 +543,8 @@ export function TradingChart({
       if (frameId !== null) cancelAnimationFrame(frameId)
       chart.remove()
       chartRef.current     = null
-  candleCountRef.current = 0
-  lastCandleTimeRef.current = null
-  candleSerRef.current = null
+      renderedSeriesRef.current = null
+      candleSerRef.current = null
       volSerRef.current    = null
       ema9Ref.current      = null
       ema21Ref.current     = null
@@ -695,96 +701,114 @@ export function TradingChart({
 
   // ── Update candle + volume data ──────────────────────────────────────────────
   useEffect(() => {
-    if (!candleSerRef.current || !volSerRef.current || candleData.length === 0) return
-  const previousCount = candleCountRef.current
-  const latestTime = Number(candleData[candleData.length - 1]?.time)
-  const canIncrementallyUpdate = previousCount === candleData.length
-    && previousCount > 0
-    && Number.isFinite(latestTime)
-    && lastCandleTimeRef.current === latestTime
+    const chart = chartRef.current
+    const candlesSeries = candleSerRef.current
+    const volumeSeries = volSerRef.current
+    if (!chart || !candlesSeries || !volumeSeries) return
 
-  if (volData.length !== candleData.length) return
-  try {
-    if (canIncrementallyUpdate) {
-      candleSerRef.current.update(candleData[candleData.length - 1])
-      volSerRef.current.update(volData[volData.length - 1])
-    } else {
-      candleSerRef.current.setData(candleData)
-      volSerRef.current.setData(volData)
-      candleCountRef.current = candleData.length
+    const previous = renderedSeriesRef.current
+    const count = candleData.length
+    const previousCount = previous?.candles.length ?? 0
+    const timeframeChanged = previous?.timeframe !== tf
+    const latest = candleData[count - 1]
+    const lastTime = previous?.candles[previousCount - 1]?.time
+    const canUpdateLatest = !timeframeChanged && previousCount > 0 && latest && (
+      (count === previousCount && latest.time === lastTime) ||
+      (count === previousCount + 1 && candleData[count - 2].time === lastTime)
+    ) && candleData.every((bar, index) => {
+      if (index === count - 1) return true
+      const old = previous?.candles[index]
+      const oldVolume = previous?.volume[index]
+      return old && bar.time === old.time && bar.open === old.open && bar.high === old.high
+        && bar.low === old.low && bar.close === old.close && volData[index].value === oldVolume?.value
+    })
+
+    if (timeframeChanged) {
+      userAdjustedViewRef.current = false
+      chart.priceScale("right").setAutoScale(true)
     }
-    if (Number.isFinite(latestTime)) lastCandleTimeRef.current = latestTime
-  } catch (error) {
-    console.error("[v0] Chart candle update failed; retrying with a clean series:", error)
-    candleCountRef.current = 0
-    lastCandleTimeRef.current = null
-    return
-  }
-    if (chartRef.current && previousCount !== candleData.length && !userAdjustedViewRef.current) {
-      const visibleBars = candleData.length > 120 ? 90 : Math.min(90, candleData.length)
-      const from = Math.max(0, candleData.length - visibleBars)
+    try {
+      if (canUpdateLatest) {
+        candlesSeries.update(latest)
+        volumeSeries.update(volData[count - 1])
+      } else {
+        if (!userAdjustedViewRef.current) autoFitRequestedRef.current = true
+        candlesSeries.setData(candleData)
+        volumeSeries.setData(volData)
+      }
+      renderedSeriesRef.current = { timeframe: tf, candles: candleData, volume: volData }
+    } catch (error) {
+      console.error("[v0] Chart candle update failed; retrying with a clean series:", error)
+      renderedSeriesRef.current = null
+      return
+    }
+    if (count > 0 && (timeframeChanged || previousCount === 0)) {
+      const visibleBars = Math.min(96, count)
+      const rightOffset = Math.max(4, Math.round(visibleBars * 0.06))
+      userAdjustedViewRef.current = false
       autoFitRequestedRef.current = true
-      chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 6 })
+      chart.timeScale().setVisibleLogicalRange({ from: count - visibleBars, to: count + rightOffset })
     }
-  }, [candleData, volData, candles])
+  }, [candleData, volData, tf])
 
   // ── Update EMA ──────���────────────────────────��───��───────────────────────────
   useEffect(() => {
-    if (!ema9Ref.current || times.length === 0) return
-    ema9Ref.current.setData(indicators.ema9 ? toLineData(ema9d) : [])
-    ema9Ref.current.applyOptions({ visible: indicators.ema9 })
-  }, [ema9d, indicators.ema9, times]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!ema9Ref.current) return
+    ema9Ref.current.setData(ema9d ? toLineData(ema9d) : [])
+    ema9Ref.current.applyOptions({ visible: !!ema9d })
+  }, [ema9d]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!ema21Ref.current || times.length === 0) return
-    ema21Ref.current.setData(indicators.ema21 ? toLineData(ema21d) : [])
-    ema21Ref.current.applyOptions({ visible: indicators.ema21 })
-  }, [ema21d, indicators.ema21, times]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!ema21Ref.current) return
+    ema21Ref.current.setData(ema21d ? toLineData(ema21d) : [])
+    ema21Ref.current.applyOptions({ visible: !!ema21d })
+  }, [ema21d]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!ema50Ref.current || times.length === 0) return
-    ema50Ref.current.setData(indicators.ema50 ? toLineData(ema50d) : [])
-    ema50Ref.current.applyOptions({ visible: indicators.ema50 })
-  }, [ema50d, indicators.ema50, times]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!ema50Ref.current) return
+    ema50Ref.current.setData(ema50d ? toLineData(ema50d) : [])
+    ema50Ref.current.applyOptions({ visible: !!ema50d })
+  }, [ema50d]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Update BB ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!bbUpperRef.current || !bbMidRef.current || !bbLowerRef.current || times.length === 0) return
-    const show = indicators.bb
-    bbUpperRef.current.setData(show ? toLineData(bbd.upper) : []); bbUpperRef.current.applyOptions({ visible: show })
-    bbMidRef.current.setData(show ? toLineData(bbd.mid) : []);     bbMidRef.current.applyOptions({ visible: show })
-    bbLowerRef.current.setData(show ? toLineData(bbd.lower) : []); bbLowerRef.current.applyOptions({ visible: show })
-  }, [bbd, indicators.bb, times]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!bbUpperRef.current || !bbMidRef.current || !bbLowerRef.current) return
+    bbUpperRef.current.setData(bbd ? toLineData(bbd.upper) : []); bbUpperRef.current.applyOptions({ visible: !!bbd })
+    bbMidRef.current.setData(bbd ? toLineData(bbd.mid) : []);     bbMidRef.current.applyOptions({ visible: !!bbd })
+    bbLowerRef.current.setData(bbd ? toLineData(bbd.lower) : []); bbLowerRef.current.applyOptions({ visible: !!bbd })
+  }, [bbd]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Update RSI ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!rsiSerRef.current || !rsiOb70Ref.current || !rsiOs30Ref.current || times.length === 0) return
-    const show = indicators.rsi && chartPane === "rsi"
-    rsiSerRef.current.setData(show ? toLineData(rsid) : [])
+    if (!rsiSerRef.current || !rsiOb70Ref.current || !rsiOs30Ref.current) return
+    const active = chartPane === "rsi" ? rsid : null
+    const show = !!active
+    rsiSerRef.current.setData(active ? toLineData(active) : [])
     rsiSerRef.current.applyOptions({ visible: show })
-    const ob70: LineData[] = times.map((t) => ({ time: t, value: 70 }))
-    const os30: LineData[] = times.map((t) => ({ time: t, value: 30 }))
-    rsiOb70Ref.current.setData(show ? ob70 : []); rsiOb70Ref.current.applyOptions({ visible: show })
-    rsiOs30Ref.current.setData(show ? os30 : []); rsiOs30Ref.current.applyOptions({ visible: show })
+    rsiOb70Ref.current.setData(show ? times.map(time => ({ time, value: 70 })) : [])
+    rsiOb70Ref.current.applyOptions({ visible: show })
+    rsiOs30Ref.current.setData(show ? times.map(time => ({ time, value: 30 })) : [])
+    rsiOs30Ref.current.applyOptions({ visible: show })
     chartRef.current?.priceScale("rsi").applyOptions({
       scaleMargins: show ? { top: 0.70, bottom: 0.02 } : { top: 0.99, bottom: 0 },
     })
-  }, [rsid, indicators.rsi, chartPane, times]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rsid, chartPane]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Update MACD ─────────────────────────────────────────────────────���───���────
   useEffect(() => {
-    if (!macdSerRef.current || !macdSigRef.current || !macdHistRef.current || times.length === 0) return
-    const show = indicators.macd && chartPane === "macd"
-    macdSerRef.current.setData(show ? toLineData(macdd.macd) : [])
-    macdSigRef.current.setData(show ? toLineData(macdd.signal) : [])
-    macdHistRef.current.setData(show ? toHistData(macdd.hist, "rgba(38,166,154,0.6)", "rgba(239,83,80,0.6)") : [])
+    if (!macdSerRef.current || !macdSigRef.current || !macdHistRef.current) return
+    const active = chartPane === "macd" ? macdd : null
+    const show = !!active
+    macdSerRef.current.setData(active ? toLineData(active.macd) : [])
+    macdSigRef.current.setData(active ? toLineData(active.signal) : [])
+    macdHistRef.current.setData(active ? toHistData(active.hist, "rgba(38,166,154,0.6)", "rgba(239,83,80,0.6)") : [])
     macdSerRef.current.applyOptions({ visible: show })
     macdSigRef.current.applyOptions({ visible: show })
     macdHistRef.current.applyOptions({ visible: show })
     chartRef.current?.priceScale("macd").applyOptions({
       scaleMargins: show ? { top: 0.70, bottom: 0.02 } : { top: 0.99, bottom: 0 },
     })
-  }, [macdd, indicators.macd, chartPane, times]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [macdd, chartPane]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Volume visibility ─────────────────────�����──────────────────────────────────
   useEffect(() => {
@@ -797,25 +821,14 @@ export function TradingChart({
 
   // ── Adaptive market scale and live bid/ask overlays ─────────────────────────
   useEffect(() => {
-    const chart = chartRef.current
     const series = candleSerRef.current
-    if (!chart || !series || !priceEnvelope) return
-    const width = containerRef.current?.clientWidth ?? 900
-    const visibleBars = Math.max(36, Math.min(96, candleData.length || 36))
-    const spacing = Math.max(4, Math.min(14, width / visibleBars * 0.72))
-    // Keep the default recent-market framing, but fit the visible candles when viewing history.
-    const autoscaleInfoProvider: AutoscaleInfoProvider = (original) => userAdjustedViewRef.current
+    if (!series) return
+    // Fit the price axis to recent candles without moving the time viewport on quote updates.
+    const autoscaleInfoProvider: AutoscaleInfoProvider = (original) => userAdjustedViewRef.current || !priceEnvelope
       ? original()
       : { priceRange: { minValue: priceEnvelope.min, maxValue: priceEnvelope.max } }
     series.applyOptions({ autoscaleInfoProvider })
-    if (candleCountRef.current === candleData.length && !userAdjustedViewRef.current) {
-      const rightOffset = Math.max(4, Math.round(visibleBars * 0.06))
-      autoFitRequestedRef.current = true
-      chart.timeScale().applyOptions({ barSpacing: spacing, minBarSpacing: 3, rightOffset })
-      autoFitRequestedRef.current = true
-      chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, candleData.length - visibleBars), to: candleData.length + rightOffset })
-    }
-  }, [priceEnvelope, candleData.length])
+  }, [priceEnvelope])
 
   useEffect(() => {
     chartRef.current?.applyOptions({
@@ -856,7 +869,7 @@ export function TradingChart({
       macd: key === "macd" && !isActive,
     }))
   }
-  const isLoading = safeCandles.length === 0
+  const isLoading = candleData.length === 0
 
   // Sync alertMode to DOM so the subscribeClick handler can read it without stale closure
   useEffect(() => {
@@ -1233,21 +1246,6 @@ export function TradingChart({
           </div>
         )}
 
-        {isLoading && (
-          <div
-            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3"
-            style={{ background: "rgba(6,11,21,0.93)", backdropFilter: "blur(8px)" }}
-          >
-            <div
-              className="w-6 h-6 rounded-full border-2 animate-spin"
-              style={{ borderColor: "rgba(34,211,238,0.15)", borderTopColor: palette.cyan }}
-            />
-            <span className="text-[9px] font-black tracking-[0.25em] uppercase" style={{ color: "#91a4b8" }}>
-              Loading chart data
-            </span>
-          </div>
-        )}
-
         {/* Crosshair active badge */}
         {crosshairActive && !alertMode && (
           <div
@@ -1265,6 +1263,30 @@ export function TradingChart({
           style={{ zIndex: 5, background: "transparent", touchAction: "pan-y" }}
         />
       </div>
+
+      {isLoading ? (
+        <div className={`${mobileControlsStyles.historyOverlay} absolute inset-0 z-10 flex flex-col items-center justify-center px-4 text-center`}>
+          <div role="status" className="flex flex-col items-center gap-2">
+            <CandlestickChart aria-hidden="true" className={`size-6 ${mobileControlsStyles.historyIcon}`} />
+            <p className="text-base font-semibold">
+              {historyStatus === "unavailable" ? "Chart history unavailable" : "Loading chart history"}
+            </p>
+            <p className={`${mobileControlsStyles.historyHint} text-sm leading-normal`}>
+              {safeSymbol} · {tf}
+            </p>
+          </div>
+          {historyStatus === "unavailable" && onRetryHistory && (
+            <button type="button" onClick={onRetryHistory} disabled={isRefreshingHistory} className={`${mobileControlsStyles.historyRetry} mt-3 inline-flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-semibold disabled:opacity-60`}>
+              <RefreshCw aria-hidden="true" className="size-4" />
+              {isRefreshingHistory ? "Retrying…" : "Retry chart"}
+            </button>
+          )}
+        </div>
+      ) : historyStatus === "cached" && (
+        <div role="status" className={`${mobileControlsStyles.historyOverlay} pointer-events-none absolute top-2 left-3 z-10 rounded-md px-2 py-1 text-sm`}>
+          Cached chart history
+        </div>
+      )}
 
       {isExpanded && onQuickTrade && !isLoading && (
         <div
