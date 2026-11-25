@@ -42,7 +42,8 @@ interface ParticipantOnboardingDashboardProps {
   verificationStatus: string
   accountBalance: number
   accountType: "Standard" | "Funded"
-  accountStatus: "Active" | "Frozen"
+  accountStatus: "Active" | "Frozen" | "Breached"
+  balanceResetReason?: string
   bonusBalance: number
   totalEarnings: number
   tradeCount: number
@@ -83,6 +84,7 @@ export function ParticipantOnboardingDashboard({
   accountBalance,
   accountType,
   accountStatus,
+  balanceResetReason,
   bonusBalance,
   totalEarnings,
   tradeCount,
@@ -113,7 +115,7 @@ export function ParticipantOnboardingDashboard({
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Monitor your capital, review performance, and move directly to the tools you use most.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={accountStatus === "Frozen" ? "destructive" : "secondary"}>{accountStatus}</Badge>
+          <Badge variant={accountStatus !== "Active" ? "destructive" : "secondary"}>{accountStatus}</Badge>
           <Badge asChild variant="outline">
             <Link href="/participant/dashboard/profile">
               {isVerified ? <BadgeCheck data-icon="inline-start" aria-hidden="true" /> : <ShieldCheck data-icon="inline-start" aria-hidden="true" />}
@@ -140,6 +142,7 @@ export function ParticipantOnboardingDashboard({
           <CardContent className="flex flex-col gap-5">
             <div className="min-w-0">
               <p className="participant-command-balance font-mono" aria-label={balancesVisible ? `Account balance ${formatDashboardCurrency(accountBalance)}` : "Account balance hidden"}>{money(accountBalance)}</p>
+              {balanceResetReason && <p role="status" className="mt-3 text-pretty text-sm leading-6 text-muted-foreground">{balanceResetReason}</p>}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary">{accountType} account</Badge>
                 <span className="text-xs text-muted-foreground">USDT wallet</span>

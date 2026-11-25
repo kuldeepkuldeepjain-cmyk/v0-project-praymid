@@ -25,6 +25,8 @@ import { TopUpModal } from "@/components/topup-modal"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
   import { ForexTradingPlatform } from "@/components/forex-trading-platform"
+import { AccountBreachNotice } from "@/components/account-breach-notice"
+import { getAccountBreach } from "@/lib/account-breach"
 
 import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
 import { ParticipantDashboardHero } from "@/components/participant-dashboard-hero"
@@ -1720,7 +1722,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
     }
   }
 
-  const walletBalance = Number(participantData?.account_balance) || 0
+  const accountBreach = getAccountBreach(participantData)
+  const walletBalance = accountBreach ? 0 : Number(participantData?.account_balance) || 0
   const [terminalStats, setTerminalStats] = useState({ equity: walletBalance, openPnl: 0, openPnlPct: 0 })
   const normalizedAccountType = String(participantData?.account_type ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "")
   const isFundedAccount = normalizedAccountType === "funded" || normalizedAccountType === "fundedaccount" || normalizedAccountType === "fundingtier"
@@ -1756,7 +1759,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const kycStatusLabel = isKycVerified ? "Verified" : isKycInReview ? "In review" : rawKycStatus === "rejected" ? "Action needed" : "Not submitted"
   const kycStatusTone = isKycVerified ? "is-verified" : isKycInReview ? "is-pending" : "is-needed"
   const fundedInitialBalance = Number(participantData.funded_initial_balance) || fundedBaseAmount
-  const fundedEquity = Number(terminalStats.equity) || walletBalance
+  const fundedEquity = accountBreach ? 0 : Number(terminalStats.equity) || walletBalance
   const fundedDrawdownSnapshot = getFundedDrawdownSnapshot(
     participantData.account_type,
     fundedInitialBalance,
@@ -1847,15 +1850,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           </div>
         </div>
       )}
-      {isFundedAccountBreached && (
-        <section aria-label="Funded account breach" className="mx-3 mt-3 flex flex-col gap-3 rounded-xl border border-red-400/30 bg-slate-950 p-4 text-slate-100 sm:mx-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-sm font-semibold">Funded account breached</h2>
-            <p className="mt-1 text-sm text-slate-300">Your trading balance is $0.00. Select a new plan and pay its fee to restart after approval.</p>
-          </div>
-          <Button asChild className="shrink-0"><Link href="/participant/dashboard/add-funds?tier=1">Restart Funded account</Link></Button>
-        </section>
-      )}
+      {accountBreach && <section aria-label="Account breach and recovery" className="mx-3 mt-3 sm:mx-4"><AccountBreachNotice account={participantData} /></section>}
 
       {showPinSetup && participantData && (
         <ParticipantPinSetup
@@ -2020,7 +2015,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 verificationStatus={kycStatusLabel}
                 accountBalance={walletBalance}
                 accountType={isFundedAccount ? "Funded" : "Standard"}
-                accountStatus={participantData.account_frozen || participantData.is_frozen || participantData.status === "frozen" ? "Frozen" : "Active"}
+                accountStatus={accountBreach ? "Breached" : participantData.account_frozen || participantData.is_frozen || participantData.status === "frozen" ? "Frozen" : "Active"}
+                balanceResetReason={accountBreach?.reason}
                 bonusBalance={Number(participantData.bonus_balance) || 0}
                 totalEarnings={Number(participantData.total_earnings) || 0}
                 tradeCount={Number(participantData.participation_count) || 0}

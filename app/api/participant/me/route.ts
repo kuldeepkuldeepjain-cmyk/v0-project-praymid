@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { getPool } from "@/lib/db"
+import { getAccountBreach } from "@/lib/account-breach"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { profileDetailsSchema } from "@/lib/participant-profile"
 import { getProfileDatabase, profileParticipants } from "@/lib/participant-profile-db"
@@ -93,8 +94,9 @@ export async function GET(request: Request) {
         next_contribution_date: p.next_contribution_date || null,
         last_contribution_date: p.last_contribution_date || null,
         // Coerce PostgreSQL numeric strings to JS numbers
-        account_balance: Number(p.account_balance) || 0,
-        wallet_balance: Number(p.wallet_balance ?? p.account_balance) || 0,
+        account_balance: getAccountBreach(p) ? 0 : Number(p.account_balance) || 0,
+        wallet_balance: getAccountBreach(p) ? 0 : Number(p.wallet_balance ?? p.account_balance) || 0,
+        balance_reset_reason: getAccountBreach(p)?.reason ?? null,
         bonus_balance: Number(p.bonus_balance) || 0,
         total_earnings: Number(p.total_earnings) || 0,
         contributed_amount: Number(p.contributed_amount) || 0,

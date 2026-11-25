@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useIsMobile } from "@/hooks/use-mobile"
 import QRCode from "qrcode"
 import { ArrowLeft, X, Wallet, CheckCircle2, AlertCircle, Loader2, Send, Landmark } from "lucide-react"
@@ -173,7 +174,6 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     }
     fetchPendingRequests()
     const fetchFundedTierEligibility = async () => {
-      if (!isFundedAccount && !isInitialFundedTopUp) return
       setCheckingFundedTier(true)
       try {
         const response = await participantFetch("/api/participant/topup/availability", { cache: "no-store" })
@@ -189,7 +189,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
         setFundedRestartRequired(requiresRestart)
         if (requiresRestart) {
           setAmount("")
-          setFundingMode("funded")
+          setFundingMode(initialFundingMode === "actual" ? "actual" : "funded")
         } else if (available && (initialFundingMode === "funded" || (initialFundingMode !== "actual" && (openFundedTier || isInitialFundedTopUp)))) {
           setFundingMode("funded")
         }
@@ -315,12 +315,12 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   const fundedTiers: Record<number, number> = Object.fromEntries(FUNDED_PLANS.map((plan) => [plan.topUpAmount, plan.baseAmount]))
   // Keep the two funded-account choices visible even if the parent updates
   // the modal mode and open state in the same batched click event.
-  const showFundingOptions = Boolean(isFundedAccount || isInitialFundedTopUp)
+  const showFundingOptions = Boolean(isFundedAccount || isInitialFundedTopUp || fundedRestartRequired)
   const canUseFundedTier = fundedRestartRequired ? fundedTierEligibility === true : fundedTierAvailable ?? fundedTierEligibility === true
   const isFundedAmountValid = !showFundingOptions || fundingMode !== "funded" || parsedAmount in fundedTiers
   const isPromoCompatible = !appliedPromo || appliedPromo.discountType !== "inr" || paymentMethod === "inr"
-  const isAmountValid = (!showFundingOptions || fundedTierEligibility !== null) && (!fundedRestartRequired || (canUseFundedTier && fundingMode === "funded"))
-    && !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid && isPromoCompatible && (!appliedPromo || payableAmount >= 5)
+  const isAmountValid = fundedTierEligibility !== null && (!fundedRestartRequired || canUseFundedTier)
+    && Number.isFinite(parsedAmount) && parsedAmount >= 5 && parsedAmount <= 100000 && isFundedAmountValid && isPromoCompatible && (!appliedPromo || payableAmount >= 5)
   const expectedCreditAmount = fundingMode === "funded" && parsedAmount in fundedTiers
     ? fundedTiers[parsedAmount as keyof typeof fundedTiers]
     : parsedAmount
@@ -442,14 +442,14 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
 
   const checkoutDescription = step === "success"
     ? fundedRestartRequired ? "Your restart payment is under review. Your balance remains $0.00 until approval." : "Your payment reference has been sent for review."
-    : fundedRestartRequired ? "Choose a new plan and pay its fee. Your trading balance stays at $0.00 until the payment is approved." : "Choose your amount, transfer your payment, and submit the reference."
+    : fundedRestartRequired ? "Buy a new Funded or Challenge plan, or deposit into a new Normal account. Your trading balance stays at $0.00 until approval." : "Choose your amount, transfer your payment, and submit the reference."
 
   const content = (
     <>
         <header className="funding-checkout-header">
           <div className="funding-checkout-heading">
             <p className="funding-kicker">EliteFund checkout</p>
-            {presentation === "page" ? <h1>{step === "success" ? "Request submitted" : fundedRestartRequired ? "Restart your Funded account" : "Add funds"}</h1> : <DialogTitle>{step === "success" ? "Request submitted" : fundedRestartRequired ? "Restart your Funded account" : "Add funds"}</DialogTitle>}
+            {presentation === "page" ? <h1>{step === "success" ? "Request submitted" : fundedRestartRequired ? "Choose your next account" : "Add funds"}</h1> : <DialogTitle>{step === "success" ? "Request submitted" : fundedRestartRequired ? "Choose your next account" : "Add funds"}</DialogTitle>}
             {presentation === "page" ? <p>{checkoutDescription}</p> : <DialogDescription>{checkoutDescription}</DialogDescription>}
           </div>
           {step !== "submitting" && <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={presentation === "page" ? "Back to dashboard" : "Close funding checkout"}>{presentation === "page" ? <ArrowLeft data-icon="inline-start" /> : <X data-icon="inline-start" />}</Button>}
@@ -478,9 +478,10 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
                             {FUNDED_PLANS.map(({ topUpAmount, baseAmount }) => <ToggleGroupItem key={topUpAmount} value={String(topUpAmount)} onClick={() => { setFundingMode("funded"); setPaymentMethod("inr"); setNetwork("INR"); setAmount(String(topUpAmount)) }}><strong>${topUpAmount.toLocaleString()} payment</strong><span>${baseAmount.toLocaleString()} funded</span></ToggleGroupItem>)}
                           </ToggleGroup>
                         ) : null}
-                        {!fundedRestartRequired && <Button type="button" variant="outline" className="funding-normal-option" data-active={fundingMode === "actual"} aria-pressed={fundingMode === "actual"} onClick={() => { setFundingMode("actual"); setAmount("") }} disabled={step === "submitting"}>
-                          <span><strong>Normal Add Fund</strong><small>Add your selected amount to your trading wallet.</small></span>{fundingMode === "actual" && <CheckCircle2 data-icon="inline-end" />}
-                        </Button>}
+                        <Button type="button" variant="outline" className="funding-normal-option" data-active={fundingMode === "actual"} aria-pressed={fundingMode === "actual"} onClick={() => { setFundingMode("actual"); setAmount("") }} disabled={step === "submitting" || (fundedRestartRequired && !canUseFundedTier)}>
+                          <span><strong>{fundedRestartRequired ? "Start Normal account" : "Normal Add Fund"}</strong><small>{fundedRestartRequired ? "Your deposit becomes the new Normal account balance after approval." : "Add your selected amount to your trading wallet."}</small></span>{fundingMode === "actual" && <CheckCircle2 data-icon="inline-end" />}
+                        </Button>
+                        {fundedRestartRequired && <Button asChild variant="outline"><Link href="/participant/dashboard/challenge#challenge-plans-heading">Choose a Challenge account instead</Link></Button>}
                         <Separator />
                       </div>
                     )}
@@ -497,10 +498,10 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
                     <Field data-invalid={Boolean(amount && !isAmountValid)}>
                       <FieldLabel htmlFor="topup-amount">{paymentMethod === "inr" ? "Funding amount (USD) — QR in INR" : appliedPromo ? "Funding amount (USD)" : "Amount sent (USDT)"}<span aria-hidden="true">*</span></FieldLabel>
                       <InputGroup>
-                        <InputGroupInput id="topup-amount" type="number" inputMode="decimal" min="5" max="100000" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="funding-amount-input" readOnly={fundedRestartRequired} disabled={step === "submitting"} aria-required="true" aria-invalid={Boolean(amount && !isAmountValid)} aria-describedby={amount && !isAmountValid && isPromoCompatible ? "topup-amount-help topup-amount-error" : "topup-amount-help"} />
+                        <InputGroupInput id="topup-amount" type="number" inputMode="decimal" min="5" max="100000" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="funding-amount-input" readOnly={fundedRestartRequired && fundingMode === "funded"} disabled={step === "submitting"} aria-required="true" aria-invalid={Boolean(amount && !isAmountValid)} aria-describedby={amount && !isAmountValid && isPromoCompatible ? "topup-amount-help topup-amount-error" : "topup-amount-help"} />
                         <InputGroupAddon align="inline-end">{paymentMethod === "inr" || appliedPromo ? "USD" : "USDT"}</InputGroupAddon>
                       </InputGroup>
-                      {!fundedRestartRequired && <ToggleGroup type="single" variant="outline" className="funding-choice-group" value={String(Number(amount))} disabled={step === "submitting"} aria-label="Quick funding amounts">
+                      {(!fundedRestartRequired || fundingMode === "actual") && <ToggleGroup type="single" variant="outline" className="funding-choice-group" value={String(Number(amount))} disabled={step === "submitting"} aria-label="Quick funding amounts">
                         {(fundingMode === "funded" ? [50, 100, 250, 500] : [25, 50, 100, 250]).map((quickAmount) => <ToggleGroupItem key={quickAmount} value={String(quickAmount)} onClick={() => setAmount(String(quickAmount))}>${quickAmount}</ToggleGroupItem>)}
                       </ToggleGroup>}
                       <FieldDescription id="topup-amount-help">{paymentMethod === "inr" && Number.isFinite(payableAmount) && payableAmount > 0 ? `UPI payment: ₹${(payableAmount * inrRate).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹${inrRate} per $1.` : fundingMode === "funded" ? "Use one of the supported funded account tiers." : "Minimum funding amount: $5."}</FieldDescription>

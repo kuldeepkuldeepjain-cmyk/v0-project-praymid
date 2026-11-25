@@ -3,6 +3,7 @@ import { query, execute, withTransaction } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 import { FUNDED_PLANS, getFundedBaseAmount } from "@/lib/funded-account"
 import { getChallengePlan } from "@/lib/challenge-account"
+import { getAccountBreach, isCurrentBreachPayment } from "@/lib/account-breach"
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdminSession(req)
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
     if (topup.payment_method === "challenge") {
       const reviewResult = await withTransaction(async (client) => {
         const paymentResult = await client.query(
-          `SELECT id, participant_id, participant_email, amount, status, admin_notes
+          `SELECT id, participant_id, participant_email, amount, status, admin_notes, created_at
            FROM topup_requests WHERE id = $1 FOR UPDATE`,
           [requestId],
         )
@@ -83,14 +84,15 @@ export async function POST(req: NextRequest) {
         }
 
         const participantResult = await client.query(
-          `SELECT id, email, account_type, challenge_plan_key, challenge_status
+          `SELECT id, email, account_type, challenge_plan_key, challenge_status, challenge_failed_at, funded_breach_status, funded_breach_at
            FROM participants WHERE id = $1 FOR UPDATE`,
           [payment.participant_id],
         )
         const participant = participantResult.rows[0]
         if (!participant) return { error: "Participant not found", status: 404 }
         const plan = getChallengePlan(participant.challenge_plan_key)
-        if (participant.account_type !== "challenge" || participant.challenge_status !== "pending_payment" || !plan || Math.abs(Number(payment.amount) - plan.fee) > 0.01) {
+        const breach = getAccountBreach(participant)
+        if ((participant.account_type !== "challenge" && !breach) || (breach && !isCurrentBreachPayment(participant, payment.created_at)) || participant.challenge_status !== "pending_payment" || !plan || !Number.isFinite(Number(payment.amount)) || Math.abs(Number(payment.amount) - plan.fee) > 0.01) {
           return { error: "Challenge payment does not match an account awaiting review.", status: 409 }
         }
 
@@ -105,6 +107,11 @@ export async function POST(req: NextRequest) {
         if (!claimed.rowCount) return { error: "Request already processed", status: 409 }
 
         if (action === "approve") {
+          if (breach) await client.query(
+            `UPDATE predictions SET status = 'settled', result = 'cancelled', profit_loss = 0, closed_at = NOW()
+             WHERE LOWER(participant_email) = LOWER($1) AND balance_source = 'wallet' AND status IN ('pending', 'settling')`,
+            [participant.email],
+          )
           await client.query(
             `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual',
                close_time = COALESCE(close_time, NOW()::text), updated_at = NOW()
@@ -114,6 +121,8 @@ export async function POST(req: NextRequest) {
           await client.query(
             `UPDATE participants SET account_type = 'challenge', account_balance = $1,
                challenge_status = 'active', challenge_started_at = NOW(),
+               funded_breach_status = 'clear', funded_breach_at = NULL, funded_breach_balance = NULL,
+               funded_breach_equity = NULL, funded_amount = NULL, funded_initial_balance = NULL,
                challenge_passed_at = NULL, challenge_passed_equity = NULL, challenge_failed_at = NULL,
                challenge_peak_equity = $1, challenge_day_start_equity = $1,
                challenge_day_start_date = (NOW() AT TIME ZONE 'UTC')::date,
@@ -171,7 +180,7 @@ export async function POST(req: NextRequest) {
     if (action === "approve") {
       const approval = await withTransaction(async (client) => {
         const requestResult = await client.query(
-          `SELECT participant_id, participant_email, amount, payment_method, status, promo_bonus_amount
+          `SELECT participant_id, participant_email, amount, payment_method, status, promo_bonus_amount, created_at
            FROM topup_requests WHERE id = $1 FOR UPDATE`,
           [requestId],
         )
@@ -182,13 +191,13 @@ export async function POST(req: NextRequest) {
 
         const participantResult = await client.query(
           `SELECT account_balance, account_type, funded_amount, funded_initial_balance, funded_breach_status,
-                  (funded_breach_at IS NULL OR funded_breach_at <= (SELECT created_at FROM topup_requests WHERE id = $2)) AS payment_after_breach
+                  funded_breach_at, challenge_status, challenge_failed_at
            FROM participants WHERE id = $1 FOR UPDATE`,
-          [payment.participant_id, requestId],
+          [payment.participant_id],
         )
         const participant = participantResult.rows[0]
         if (!participant) throw new Error("TOPUP_PARTICIPANT_MISSING")
-        if (participant.account_type === "challenge" && payment.payment_method !== "funded_tier") {
+        if (participant.account_type === "challenge" && !["funded_tier", "funded_restart", "normal_restart"].includes(payment.payment_method)) {
           throw new Error("TOPUP_CHALLENGE_ACCOUNT")
         }
 
@@ -200,9 +209,11 @@ export async function POST(req: NextRequest) {
         const requestedFundingAmount = Number((depositAmount + promoBonusAmount).toFixed(2))
         const isFundedAccount = participant.account_type === "funded"
         const isFundedRestart = payment.payment_method === "funded_restart"
-        const isBreached = isFundedAccount && participant.funded_breach_status === "breached"
-        if (isBreached && !isFundedRestart) throw new Error("TOPUP_RESTART_REQUIRED")
-        if (isFundedRestart && (!isBreached || !participant.payment_after_breach)) throw new Error("TOPUP_STALE_RESTART")
+        const isNormalRestart = payment.payment_method === "normal_restart"
+        const isRestart = isFundedRestart || isNormalRestart
+        const isBreached = Boolean(getAccountBreach(participant))
+        if (isBreached && !isRestart) throw new Error("TOPUP_RESTART_REQUIRED")
+        if (isRestart && !isCurrentBreachPayment(participant, payment.created_at)) throw new Error("TOPUP_STALE_RESTART")
 
         const isChallengeUpgrade = participant.account_type === "challenge" && payment.payment_method === "funded_tier"
         const isInitialFundedTopUp = payment.payment_method === "funded_tier"
@@ -212,10 +223,10 @@ export async function POST(req: NextRequest) {
         if (startsFundedPlan && !fundedPlan) throw new Error("TOPUP_INVALID_FUNDED_TIER")
 
         const creditedAmount = startsFundedPlan ? fundedPlan!.baseAmount : requestedFundingAmount
-        const newBalance = isChallengeUpgrade || isFundedRestart ? creditedAmount : Number(participant.account_balance || 0) + creditedAmount
+        const newBalance = isChallengeUpgrade || isRestart ? creditedAmount : Number(participant.account_balance || 0) + creditedAmount
         const fundedBaseAmount = startsFundedPlan ? creditedAmount : getFundedBaseAmount(newBalance, participant.funded_amount)
 
-        if (isFundedRestart) {
+        if (isRestart) {
           await client.query(
             `UPDATE forex_trades SET status = 'cancelled', close_reason = 'account_breach',
                close_time = COALESCE(close_time, NOW()::text), updated_at = NOW()
@@ -229,7 +240,19 @@ export async function POST(req: NextRequest) {
           )
         }
 
-        await client.query(
+        if (isRestart) {
+          await client.query(
+            `UPDATE participants SET account_type = $3, account_balance = $1,
+               funded_initial_balance = $4, funded_amount = $4,
+               funded_breach_status = 'clear', funded_breach_at = NULL,
+               funded_breach_balance = NULL, funded_breach_equity = NULL,
+               challenge_status = 'not_started', challenge_plan_key = NULL,
+               challenge_failed_at = NULL, challenge_started_at = NULL,
+               challenge_passed_at = NULL, challenge_passed_equity = NULL, updated_at = NOW()
+             WHERE id = $2`,
+            [newBalance, payment.participant_id, isFundedRestart ? "funded" : "normal", isFundedRestart ? creditedAmount : null],
+          )
+        } else await client.query(
           isFundedAccount || isChallengeUpgrade
             ? `UPDATE participants SET account_balance = $1,
                  account_type = CASE WHEN $3 THEN 'funded' ELSE account_type END,
@@ -300,8 +323,8 @@ export async function POST(req: NextRequest) {
           newBalance,
           creditedAmount,
           promoBonusAmount,
-          isFundedAccount,
-          accountRevived: isFundedRestart,
+          isFundedAccount: isFundedRestart || (!isNormalRestart && (isFundedAccount || isChallengeUpgrade)),
+          accountRevived: isRestart,
           referrerEmail,
         }
       })
@@ -359,8 +382,8 @@ export async function POST(req: NextRequest) {
         TOPUP_CHALLENGE_ACCOUNT: { message: "Challenge accounts cannot receive standard wallet top-ups.", status: 403 },
         TOPUP_INVALID_AMOUNT: { message: "Invalid top-up amount", status: 400 },
         TOPUP_INVALID_FUNDED_TIER: { message: "The payment does not match a valid Funded plan fee.", status: 400 },
-        TOPUP_RESTART_REQUIRED: { message: "This account is breached. Only a new Funded restart plan payment can reactivate it.", status: 409 },
-        TOPUP_STALE_RESTART: { message: "This payment does not match the current funded account breach.", status: 409 },
+        TOPUP_RESTART_REQUIRED: { message: "This account is breached. A new funded, challenge, or normal account payment is required.", status: 409 },
+        TOPUP_STALE_RESTART: { message: "This payment does not match the current account breach.", status: 409 },
       }
       const knownError = knownErrors[error.message]
       if (knownError) return NextResponse.json({ success: false, message: knownError.message }, { status: knownError.status })

@@ -15,6 +15,8 @@ import { PageLoader } from "@/components/ui/page-loader"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { participantFetch } from "@/lib/auth"
 import { ChallengeRewardCard } from "@/components/challenge-reward-card"
+import { AccountBreachNotice } from "@/components/account-breach-notice"
+import { getAccountBreach } from "@/lib/account-breach"
 import { DEFAULT_CHALLENGE_PLANS, formatChallengeFee, getChallengeStatusLabel, type ChallengePlan } from "@/lib/challenge-account"
 
 const CHALLENGE_URL = "/api/participant/challenge"
@@ -46,6 +48,11 @@ function ChallengeContent() {
     shouldRetryOnError: false,
   })
   const { data: paymentSettings } = useSWR(SETTINGS_URL, settingsFetcher, { revalidateOnFocus: false })
+  const { data: recoveryAvailability, mutate: refreshRecovery } = useSWR(
+    getAccountBreach(data?.participant) ? "/api/participant/topup/availability" : null,
+    participantFetcher,
+    { refreshInterval: 15_000, revalidateOnFocus: true },
+  )
   const [selectedPlanKey, setSelectedPlanKey] = useState<string | null>(() => {
     const requestedPlan = searchParams.get("plan")
     return DEFAULT_CHALLENGE_PLANS.some((plan) => plan.key === requestedPlan) ? requestedPlan : null
@@ -101,8 +108,12 @@ function ChallengeContent() {
     return () => { cancelled = true }
   }, [paymentMethod, upiPaymentLink])
 
-  const canSubmitPayment = participant?.account_type === "challenge"
-    && !["active", "pending_payment", "passed"].includes(status)
+  const breach = getAccountBreach(participant)
+  const recoveryPaymentPending = Boolean(breach && data?.paymentReview?.status === "pending"
+    && (!breach.occurredAt || new Date(data.paymentReview.submittedAt).getTime() >= new Date(breach.occurredAt).getTime()))
+  const canSubmitPayment = breach
+    ? recoveryAvailability?.recoveryPending === false && !recoveryPaymentPending
+    : participant?.account_type === "challenge" && !["active", "pending_payment", "passed"].includes(status)
   const progress = Math.max(0, Math.min(100, Number(metrics?.progressPercent) || 0))
   const displayStatus = getChallengeStatusLabel(status)
 
@@ -145,7 +156,7 @@ function ChallengeContent() {
       setTransactionHash("")
       setWalletAddress("")
       setUpiReference("")
-      await mutate()
+      await Promise.all([mutate(), refreshRecovery()])
     } catch (submitError) {
       setMessage(submitError instanceof Error ? submitError.message : "Unable to submit payment. Please try again.")
     } finally {
@@ -209,7 +220,10 @@ function ChallengeContent() {
           </section>
         )}
 
-        {participant?.account_type !== "challenge" ? (
+        {breach && <AccountBreachNotice account={participant} />}
+        {breach && recoveryAvailability?.recoveryPending && <p role="status" className="text-sm leading-6">Your replacement payment is under review. Do not send another payment. Your balance remains $0.00 until approval.</p>}
+
+        {participant?.account_type !== "challenge" && !breach ? (
           <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
             <CardHeader>
               <CardTitle className="text-white">Switch to a Challenge account</CardTitle>
