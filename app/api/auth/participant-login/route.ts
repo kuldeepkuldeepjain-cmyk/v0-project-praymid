@@ -103,22 +103,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Sign-in is temporarily unavailable while your account is under security review." }, { status: 403 })
     }
 
-    const fundedAccountBreached = participant.funded_breach_status === "breached"
-    if (participant.is_deleted || participant.is_frozen || (participant.account_frozen && !fundedAccountBreached) || ["blocked", "frozen", "suspended"].includes(participant.status)) {
+    // Account lifecycle and trading restrictions must not prevent authenticated dashboard access.
+    if (participant.is_deleted) {
       return NextResponse.json({ success: false, error: "Account is unavailable" }, { status: 403 })
     }
-
-    if (participant.otp_verified === false || participant.status === "pending" || participant.is_active === false) {
-      await updateParticipantSecurityProfile(participant.email, request, 20)
-      await recordSecurityEvent({ eventType: "participant_login_pending_email_verification", actorType: "participant", actorEmail: participant.email, actorId: String(participant.id), request, riskScore: 20 })
-      return NextResponse.json({
-        success: false,
-        error: "Please verify your email before signing in. Check your inbox for the verification code.",
-        pendingVerification: true,
-        emailVerificationRequired: true,
-      }, { status: 403 })
-    }
-
 
     await startParticipantLogin(participant, context)
     void updateParticipantSecurityProfile(participant.email, request, 0)
