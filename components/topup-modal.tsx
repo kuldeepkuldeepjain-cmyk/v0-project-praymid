@@ -228,7 +228,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
 
   useEffect(() => {
-    if (!isOpen || paymentMethod !== "inr" || !inrDetails.upiId || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+    if (!isOpen || fundedTierEligibility === null || (fundedRestartRequired && !fundedTierEligibility) || paymentMethod !== "inr" || !inrDetails.upiId || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
       setInrQrDataUrl(null)
       setInrQrExpiresAt(null)
       setInrSecondsRemaining(0)
@@ -255,7 +255,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
       })
       .catch(() => { if (!cancelled) setInrQrDataUrl(null) })
     return () => { cancelled = true }
-  }, [isOpen, paymentMethod, inrDetails.upiId, inrDetails.holderName, amount, appliedPromo, inrRate])
+  }, [isOpen, fundedTierEligibility, fundedRestartRequired, paymentMethod, inrDetails.upiId, inrDetails.holderName, amount, appliedPromo, inrRate])
 
   useEffect(() => {
     if (!inrQrExpiresAt) return
@@ -270,7 +270,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
 
   // Generate a real, scannable QR code for the selected deposit address.
   useEffect(() => {
-    if (!isOpen || !selectedWalletAddress) {
+    if (!isOpen || fundedTierEligibility === null || (fundedRestartRequired && !fundedTierEligibility) || !selectedWalletAddress) {
       setQrDataUrl(null)
       setQrLoading(false)
       return
@@ -303,7 +303,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     return () => {
       cancelled = true
     }
-  }, [isOpen, selectedWalletAddress, paymentMethod, network, amount, fundingMode])
+  }, [isOpen, fundedTierEligibility, fundedRestartRequired, selectedWalletAddress, paymentMethod, network, amount, fundingMode])
 
   const parsedAmount = parseFloat(amount)
   const promoDiscountAmount = appliedPromo && Number.isFinite(parsedAmount) && parsedAmount > 0
@@ -537,7 +537,11 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
                   </FieldGroup>
                 </FundingSection>
 
-                <FundingPaymentInstructions paymentMethod={paymentMethod} network={network} payableAmount={payableAmount} inrRate={inrRate} inrDetails={inrDetails} inrQrDataUrl={inrQrDataUrl} inrQrExpired={inrQrExpired} inrCountdownLabel={inrCountdownLabel} selectedWalletAddress={selectedWalletAddress} loadingAddress={loadingAddress} qrLoading={qrLoading} qrDataUrl={qrDataUrl} copiedAddress={copiedAddress} onCopyAddress={copyAddress} />
+                {fundedTierEligibility !== null && (!fundedRestartRequired || canUseFundedTier) ? (
+                  <FundingPaymentInstructions paymentMethod={paymentMethod} network={network} payableAmount={payableAmount} inrRate={inrRate} inrDetails={inrDetails} inrQrDataUrl={inrQrDataUrl} inrQrExpired={inrQrExpired} inrCountdownLabel={inrCountdownLabel} selectedWalletAddress={selectedWalletAddress} loadingAddress={loadingAddress} qrLoading={qrLoading} qrDataUrl={qrDataUrl} copiedAddress={copiedAddress} onCopyAddress={copyAddress} />
+                ) : (
+                  <Alert><AlertDescription>{fundedRestartRequired ? "Your replacement payment is under review. Payment instructions are hidden to prevent another transfer; your balance stays at $0.00 until approval." : "Checking account eligibility before showing payment instructions."}</AlertDescription></Alert>
+                )}
 
 
                 <FundingSection number={3} title="Confirm your transfer" description="Already paid? Add your payment reference so the team can verify it.">
