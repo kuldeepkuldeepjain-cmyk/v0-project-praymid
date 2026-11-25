@@ -280,9 +280,9 @@ function ChallengeContent() {
                   <Rule title="Profit target" value={`+${plan.profitTargetPercent}%`} detail={`Reach ${CURRENCY.format(Number(metrics.profitTarget) || 0)} equity.`} />
                   <Rule title="Daily loss limit" value={`${plan.dailyLossLimitPercent}%`} detail={`Measured against the recorded evaluation equity at the start of each UTC day.`} />
                   <Rule title="Maximum drawdown" value={`${plan.maxDrawdownPercent}%`} detail={`Static floor at ${CURRENCY.format(Number(metrics.maxEquityDrawdown) || 0)} of starting balance.`} />
-                  <Rule title="Minimum trading days" value={`${plan.minimumTradingDays} days`} detail={`Trade on at least ${plan.minimumTradingDays} separate UTC dates.`} />
+                  <Rule title="Minimum trading days" value={`${plan.minimumTradingDays} days`} detail={`Complete ${plan.minimumTradingDays} separate UTC trading days. A day counts once all its positions close. Any positions left at midnight UTC are automatically closed at the next available quote.`} />
                   <Rule title="Leverage" value={`Up to ${plan.leverage}:1`} detail="The server rejects orders above the plan limit." />
-                  <Rule title="Eligible to pass" value={Number(participant.challenge_trading_days) >= plan.minimumTradingDays && Number(metrics.equity) >= Number(metrics.profitTarget) ? "Yes" : "Not yet"} detail="Target and minimum trading days must both be met." />
+                  <Rule title="Eligible to pass" value={Number(metrics.openPositions) === 0 && Number(participant.challenge_trading_days) >= plan.minimumTradingDays && Number(metrics.equity) >= Number(metrics.profitTarget) ? "Yes" : "Not yet"} detail="Target and minimum trading days must both be met." />
                 </div>
               </CardContent>
             </Card>

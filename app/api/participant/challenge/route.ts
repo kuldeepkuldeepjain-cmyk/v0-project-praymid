@@ -5,6 +5,8 @@ import { requireParticipantSession } from "@/lib/auth-middleware"
 import { DEFAULT_CHALLENGE_PLANS, getChallengePlan, getChallengeSnapshot } from "@/lib/challenge-account"
 import { failChallengeAccount, getChallengeOpenPositionPnl, getLiveChallengeRates } from "@/lib/challenge-account-server"
 
+import { refreshChallengeDays, isPriorSession } from '@/lib/challenge-days-server'
+
 const PAYMENT_NETWORKS = new Set(["TRC20", "BEP20", "ERC20"])
 
 function utcDateKey() {
@@ -47,8 +49,9 @@ export async function GET(request: NextRequest) {
       }
       if (!plan || !["active", "passed"].includes(currentStatus)) return summary
 
+      if (currentStatus === 'active') participant.challenge_trading_days = await refreshChallengeDays(client, participant.id)
       const openTrades = (await client.query(
-        `SELECT pair, direction, lot_size, open_price, swap, margin
+        `SELECT pair, direction, lot_size, open_price, swap, margin, open_timestamp
          FROM forex_trades WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
         [participant.email],
       )).rows
@@ -65,7 +68,7 @@ export async function GET(request: NextRequest) {
         : equity
       const snapshot = getChallengeSnapshot(plan, equity, dayStartEquity, Number(participant.challenge_trading_days) || 0, currentStatus)
 
-      if (currentStatus === "active" && openPnl.complete) {
+      if (currentStatus === "active" && openPnl.complete && !openTrades.some(t => isPriorSession(t.open_timestamp))) {
         if (snapshot.breached) {
           await failChallengeAccount(client, participant, equity)
           participant.account_balance = 0
