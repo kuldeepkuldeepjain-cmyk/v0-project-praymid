@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import { DashboardFundingPreview } from "@/components/dashboard-funding-preview"
 import { ParticipantSessionAtlas } from "@/components/participant-session-atlas"
 import { ParticipantDashboardHero } from "@/components/participant-dashboard-hero"
 
@@ -161,6 +162,9 @@ export function ParticipantOnboardingDashboard({
         </Card>
       </div>
 
+      {accountType === "Standard" && accountStatus === "Active" && (
+        <DashboardFundingPreview balance={accountBalance} visible={balancesVisible} />
+      )}
       <ParticipantSessionAtlas />
 
       <section className="participant-command-metrics" aria-label="Performance overview">
