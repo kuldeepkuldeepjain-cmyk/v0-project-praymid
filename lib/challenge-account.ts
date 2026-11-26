@@ -30,7 +30,8 @@ export function formatChallengeFee(fee: number) {
 
 export function getChallengeRewardAmount(plan: ChallengePlan, passedEquity: number) {
   if (plan.key === "challenge_5k" || !Number.isFinite(passedEquity)) return 0
-  return Math.max(0, Math.round((passedEquity - plan.startingBalance) * 50) / 100)
+  const profitCents = Math.max(0, Math.round(passedEquity * 100) - Math.round(plan.startingBalance * 100))
+  return Math.floor(profitCents / 2) / 100
 }
 
 export function getChallengePlan(key: unknown, plans = DEFAULT_CHALLENGE_PLANS) {
