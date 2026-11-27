@@ -2473,7 +2473,8 @@
 
 .mobileSymbol,
 .symbolChange,
-.chartTradeActions {
+.chartTradeActions,
+.mobileChartBalance {
   display: none;
 }
 
@@ -2484,88 +2485,13 @@
     --phone-border: var(--terminal-graphite-border);
     --phone-positive: var(--terminal-graphite-positive);
     --phone-negative: var(--terminal-graphite-negative);
-    --phone-dock-height: calc(58px + env(safe-area-inset-bottom, 0px));
-    --phone-sell-fill: #bb1745;
-    --phone-buy-fill: #147a62;
+    --phone-dock-height: calc(54px + env(safe-area-inset-bottom, 0px));
+    --phone-sell-fill: #c2194d;
+    --phone-buy-fill: #117b63;
 
-    & > :global(.reference-watchlist) {
-      display: none !important;
-    }
-
+    & > :global(.reference-watchlist),
     & > :global(.mobile-terminal-header) {
-      flex: 0 0 calc(50px + env(safe-area-inset-top, 0px));
-      height: calc(50px + env(safe-area-inset-top, 0px));
-      min-height: calc(50px + env(safe-area-inset-top, 0px));
-      padding: env(safe-area-inset-top, 0px) 14px 0 !important;
-      border-bottom: 0 !important;
-      background: var(--phone-background) !important;
-    }
-
-    & :global(.mobile-terminal-brand-group) {
-      order: 2;
-      flex: 0 0 auto;
-      margin-inline-start: auto;
-    }
-
-    & :global(.mobile-terminal-brand) {
       display: none !important;
-    }
-
-    & :global(.mobile-terminal-home) {
-      width: 44px;
-      height: 44px;
-      justify-content: center;
-      padding: 0 !important;
-      border: 0 !important;
-      border-radius: 12px;
-      background: transparent !important;
-      color: var(--terminal-graphite-muted) !important;
-    }
-
-    & :global(.mobile-terminal-home span) {
-      display: none;
-    }
-
-    & :global(.mobile-terminal-home svg) {
-      width: 21px;
-      height: 21px;
-    }
-
-    & :global(.mobile-terminal-account) {
-      order: 1;
-      flex: 0 1 auto;
-      gap: 8px;
-      max-width: calc(100% - 100px);
-      min-height: 42px;
-      padding: 0 12px !important;
-      border-radius: 999px !important;
-      background: var(--terminal-graphite-surface-2) !important;
-      color: var(--phone-foreground) !important;
-    }
-
-    & :global(.mobile-terminal-account > svg) {
-      display: block;
-      flex: 0 0 16px;
-      width: 16px;
-      height: 16px;
-      color: var(--brand-primary) !important;
-    }
-
-    & :global(.mobile-terminal-account > svg:last-child) {
-      display: block;
-      color: var(--phone-foreground) !important;
-    }
-
-    & :global(.mobile-terminal-account strong) {
-      font-size: 16px !important;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-
-    & :global(.mobile-terminal-notifications) {
-      order: 3;
-      flex: 0 0 44px;
-      width: 44px;
     }
 
     & :global(.apple-terminal-chart-column) {
@@ -2577,10 +2503,10 @@
     }
 
     & :global(.apple-terminal-chart-column > .chart-header.terminal-market-dock) {
-      flex: 0 0 54px;
-      height: 54px;
-      min-height: 54px;
-      padding: 2px 14px !important;
+      flex: 0 0 calc(60px + env(safe-area-inset-top, 0px));
+      height: calc(60px + env(safe-area-inset-top, 0px));
+      min-height: calc(60px + env(safe-area-inset-top, 0px));
+      padding: env(safe-area-inset-top, 0px) 12px 0 !important;
       border: 0 !important;
       background: var(--phone-background) !important;
     }
@@ -2666,28 +2592,35 @@
 
     & :global(.terminal-market-dock-tools) {
       flex: 0 0 auto !important;
-      width: 44px !important;
+      width: auto !important;
       overflow: visible !important;
     }
 
     & :global(.terminal-chart-market-actions) {
-      overflow: visible !important;
-    }
-
-    & :global(.terminal-chart-market-actions > :not(button[aria-label="Expand chart"], button[aria-label="Collapse chart"])) {
       display: none !important;
     }
 
-    & :global(.terminal-chart-market-actions > button[aria-label="Expand chart"]) {
+    & .mobileChartBalance {
       display: inline-flex !important;
-      width: 44px !important;
-      min-height: 44px !important;
       align-items: center;
       justify-content: center;
+      gap: 6px;
+      min-height: 38px;
+      padding: 0 10px !important;
       border: 1px solid var(--phone-border) !important;
-      border-radius: 12px !important;
-      background: var(--terminal-graphite-surface) !important;
+      border-radius: 999px !important;
+      background: var(--terminal-graphite-surface-2) !important;
       color: var(--phone-foreground) !important;
+      font-size: 13px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    & .mobileChartBalance svg {
+      width: 15px;
+      height: 15px;
+      color: var(--brand-primary);
     }
 
     & :global(.terminal-trade-scroll) {
@@ -2727,7 +2660,7 @@
     }
 
     & .timeframeStrip {
-      flex: 0 0 44px;
+      flex: 0 0 42px;
       align-items: center;
       gap: 4px;
       padding: 0 12px;
@@ -2742,7 +2675,7 @@
 
     & .timeframeStrip .timeframeButton {
       min-width: 44px;
-      min-height: 42px !important;
+      min-height: 40px !important;
       padding: 0 8px;
       border-radius: 999px;
       color: var(--terminal-graphite-muted);
@@ -2762,10 +2695,10 @@
     & .chartTradeActions {
       position: relative;
       display: flex;
-      flex: 0 0 78px;
+      flex: 0 0 70px;
       align-items: stretch;
       gap: 8px;
-      padding: 5px 12px 8px;
+      padding: 4px 12px 6px;
       background: var(--phone-background);
     }
 
@@ -2815,7 +2748,7 @@
     & .chartTradeActions > button > strong {
       max-width: 100%;
       overflow: hidden;
-      font-size: clamp(18px, 6vw, 23px);
+      font-size: clamp(18px, 5.8vw, 23px);
       font-weight: 700;
       line-height: 1.2;
       letter-spacing: -.035em;

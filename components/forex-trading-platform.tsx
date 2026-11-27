@@ -3866,6 +3866,14 @@ setSelectedPair(match)
 
 	                {/* Chart Controls & Tools Group */}
 	                <div className="terminal-market-dock-tools flex items-center gap-1.5 ml-auto">
+                  <button type="button" className={mobileControlsStyles.mobileChartBalance}
+                    onClick={() => onOpenSidebar ? onOpenSidebar() : setMobileTab("account")}
+                    aria-label={`Open account menu. Balance $${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    aria-expanded={onOpenSidebar ? accountMenuOpen : undefined}
+                    aria-controls={onOpenSidebar ? "elite-terminal-sidebar" : undefined}>
+                    <Wallet aria-hidden="true" />
+                    <span>${walletBalance.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+                  </button>
                   <div
                     className="terminal-chart-market-actions flex items-center gap-1.5 shrink-0"
                     ref={setChartActionsHost}
@@ -3964,16 +3972,16 @@ setSelectedPair(p)
 	            {/* ── Timeframe Selector Bar (Docked at Bottom of Chart) ── */}
               <div className={mobileControlsStyles.timeframeStrip}>
                 <div className={mobileControlsStyles.timeframeGroup} role="group" aria-label="Chart timeframe">
-	                  {(isPhoneViewport ? (["1H", "1D", "1W", "1M", "4H", "5M", "15M", "30M"] as TimeFrame[]) : CHART_TIMEFRAMES).map(tf => (
-
+	                  {(isPhoneViewport ? (["1H", "1D", "1W", "4H", "5M", "15M", "30M", "1M"] as TimeFrame[]) : CHART_TIMEFRAMES).map(tf => (
                     <button
                       key={tf}
                       type="button"
                       onClick={() => setTimeframe(tf)}
                       aria-pressed={timeframe === tf}
+                      aria-label={isPhoneViewport && tf.endsWith("M") ? `${tf.slice(0, -1)} minute chart` : undefined}
                       className={mobileControlsStyles.timeframeButton}
                     >
-                      {tf}
+                      {isPhoneViewport && tf.endsWith("M") ? `${tf.slice(0, -1)}m` : tf}
                     </button>
                   ))}
                 </div>
