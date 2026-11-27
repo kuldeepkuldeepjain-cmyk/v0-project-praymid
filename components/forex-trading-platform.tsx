@@ -3830,11 +3830,15 @@ setSelectedPair(match)
                         <span className={mobileControlsStyles.mobileSymbol}>{selectedPair.symbol.replace("/", "")}</span>
                     <ChevronDown className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
 	                  </button>
-                      <span className={mobileControlsStyles.symbolChange} data-up={isUp}>
-                        {isUp ? <TrendingUp aria-hidden="true" /> : <TrendingDown aria-hidden="true" />}
-                        {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
-                        <small>· 24H</small>
-                      </span>
+	                  <span className={mobileControlsStyles.symbolChange} data-up={isUp} data-live={hasFreshRate(selectedPair.symbol)}>
+	                    {hasFreshRate(selectedPair.symbol) ? (
+	                      <>
+	                        {isUp ? <TrendingUp aria-hidden="true" /> : <TrendingDown aria-hidden="true" />}
+	                        {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
+	                        <small>· 24H</small>
+	                      </>
+	                    ) : "Waiting for live quote"}
+	                  </span>
 	                  {(() => {
                     const cat = PAIRS_CONFIG.find(c => c.symbol === selectedPair.symbol)?.category
                     if (!cat || cat === "Forex") return null
@@ -3911,7 +3915,7 @@ setSelectedPair(match)
 	              {selectedPair && chartLayout === "single" ? (
 	                <ErrorBoundary key={`${selectedPair.symbol}|${isDarkTheme}|${chartReloadKey}`} fallback={
 	                  <div className="chart-silent-error">
-	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={chartExpanded} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} actionsHost={chartActionsHost} mobilePresentation={isPhoneViewport} /> : null}
+	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={isPhoneViewport ? undefined : () => setChartExpanded(e => !e)} isExpanded={chartExpanded} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} actionsHost={chartActionsHost} mobilePresentation={isPhoneViewport} /> : null}
 	                  </div>
 	                }>
   <div className="terminal-single-chart-stack h-full min-h-0 w-full flex-1">
@@ -3921,7 +3925,7 @@ setSelectedPair(match)
   sym={selectedPair.symbol}
   tf={timeframe}
   openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
-  onExpand={() => setChartExpanded(e => !e)}
+  onExpand={isPhoneViewport ? undefined : () => setChartExpanded(e => !e)}
   isExpanded={chartExpanded}
   onQuickTrade={quickTrade}
   buyPrice={selectedPair.ask}
@@ -3960,7 +3964,7 @@ setSelectedPair(p)
 	            {/* ── Timeframe Selector Bar (Docked at Bottom of Chart) ── */}
               <div className={mobileControlsStyles.timeframeStrip}>
                 <div className={mobileControlsStyles.timeframeGroup} role="group" aria-label="Chart timeframe">
-	                  {(isPhoneViewport ? (["1H", "4H", "1D", "1W", "1M", "5M", "15M", "30M"] as TimeFrame[]) : CHART_TIMEFRAMES).map(tf => (
+	                  {(isPhoneViewport ? (["1H", "1D", "1W", "1M", "4H", "5M", "15M", "30M"] as TimeFrame[]) : CHART_TIMEFRAMES).map(tf => (
 
                     <button
                       key={tf}
@@ -3976,19 +3980,23 @@ setSelectedPair(p)
               </div>
 
               {selectedPair && (
-                <div className={mobileControlsStyles.chartTradeActions} role="group" aria-label={`${selectedPair.symbol} market trade`}>
+                <div className={mobileControlsStyles.chartTradeActions} role="group" aria-label={`${selectedPair.symbol} market trade`} data-live={hasFreshRate(selectedPair.symbol)}>
                   <button type="button" className={mobileControlsStyles.chartSell} onClick={() => quickTrade("SELL")}
-                    aria-label={`Sell ${selectedPair.symbol} at ${hasFreshRate(selectedPair.symbol) ? fmt(selectedPair.bid, selectedPair.symbol) : "live market price when available"}`}>
+                    disabled={!hasFreshRate(selectedPair.symbol)}
+                    aria-label={hasFreshRate(selectedPair.symbol) ? `Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}` : `Sell ${selectedPair.symbol} unavailable until a live quote arrives`}>
                     <span>SELL</span>
-                    <strong>{selectedPair.bid > 0 ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
+                    <strong>{hasFreshRate(selectedPair.symbol) ? fmt(selectedPair.bid, selectedPair.symbol) : "Waiting for quote"}</strong>
                   </button>
-                  <span className={mobileControlsStyles.chartTradeSpread} aria-label={`Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`}>
-                    {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p
-                  </span>
+                  {hasFreshRate(selectedPair.symbol) && (
+                    <span className={mobileControlsStyles.chartTradeSpread} aria-label={`Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`}>
+                      {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p
+                    </span>
+                  )}
                   <button type="button" className={mobileControlsStyles.chartBuy} onClick={() => quickTrade("BUY")}
-                    aria-label={`Buy ${selectedPair.symbol} at ${hasFreshRate(selectedPair.symbol) ? fmt(selectedPair.ask, selectedPair.symbol) : "live market price when available"}`}>
+                    disabled={!hasFreshRate(selectedPair.symbol)}
+                    aria-label={hasFreshRate(selectedPair.symbol) ? `Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}` : `Buy ${selectedPair.symbol} unavailable until a live quote arrives`}>
                     <span>BUY</span>
-                    <strong>{selectedPair.ask > 0 ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
+                    <strong>{hasFreshRate(selectedPair.symbol) ? fmt(selectedPair.ask, selectedPair.symbol) : "Waiting for quote"}</strong>
                   </button>
                 </div>
               )}

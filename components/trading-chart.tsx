@@ -215,6 +215,7 @@ export function TradingChart({
   const safeSymbol = typeof sym === "string" && sym.trim() ? sym : "EUR/USD"
   const safeCandles = Array.isArray(candles) ? candles : []
   const palette = darkTheme ? DARK_T : T
+  const chartBackground = mobilePresentation ? palette.bgSurface : palette.bg
   const containerRef = useRef<HTMLDivElement>(null)
   const gestureLayerRef = useRef<HTMLDivElement>(null)
   const chartRef     = useRef<IChartApi | null>(null)
@@ -357,7 +358,7 @@ export function TradingChart({
     const chart = createChart(container, {
       autoSize: false,
       layout: {
-        background: { type: ColorType.Solid, color: palette.bg },
+        background: { type: ColorType.Solid, color: chartBackground },
         textColor:  palette.textDim,
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif",
         fontSize:   12,
@@ -387,7 +388,7 @@ export function TradingChart({
       rightPriceScale: {
         borderColor: palette.border,
         textColor:   palette.textDim,
-        scaleMargins: { top: 0.08, bottom: 0.18 },
+        scaleMargins: mobilePresentation ? { top: 0.05, bottom: 0.12 } : { top: 0.08, bottom: 0.18 },
         entireTextOnly: false,
         autoScale: true,
         alignLabels: true,
@@ -561,7 +562,7 @@ export function TradingChart({
       macdSigRef.current   = null
       macdHistRef.current  = null
     }
-  }, [darkTheme]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [darkTheme, mobilePresentation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const layer = gestureLayerRef.current
@@ -938,7 +939,7 @@ export function TradingChart({
   const subPaneLabel = !mobilePresentation && chartPane !== "none" && indicators[chartPane] ? chartPane.toUpperCase() : null
 
   return (
-    <div className="apple-trading-chart terminal-chart-surface relative flex min-h-0 min-w-0 w-full h-full flex-col overflow-hidden select-none" style={{ background: "#0d1724" }}>
+    <div className="apple-trading-chart terminal-chart-surface relative flex min-h-0 min-w-0 w-full h-full flex-col overflow-hidden select-none" style={{ background: chartBackground }}>
 
       {actionsHost && createPortal(
         <>
@@ -1144,7 +1145,7 @@ export function TradingChart({
       </div>
 
       {/* ── Chart canvas ───────────────────────────���──���──────────────���──────────── */}
-  <div ref={containerRef} className="apple-trading-chart-canvas native-chart-gesture-surface relative flex-1 min-h-0 min-w-0 w-full" aria-label={`${safeSymbol} interactive native candlestick chart`} role="img" style={{ background: darkTheme ? DARK_T.bg : T.bg, contain: "size layout" }}>
+  <div ref={containerRef} className="apple-trading-chart-canvas native-chart-gesture-surface relative flex-1 min-h-0 min-w-0 w-full" aria-label={`${safeSymbol} interactive native candlestick chart`} role="img" style={{ background: chartBackground, contain: "size layout" }}>
 
   {/* Sub-pane label overlay in bottom-left of chart */}
 
