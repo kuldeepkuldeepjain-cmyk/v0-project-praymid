@@ -1122,7 +1122,7 @@ function SupportCenterPanel() {
   )
 }
 
-// ─── Quote depth view ─���─────────��─────────────────────────────────────────────
+// ─── Quote depth view ─���───���─────��─────────────────────────────────────────────
 
 function OrderDepth({ pair, online }: { pair: ForexPair; online: boolean }) {
   return <DepthOfMarketLadder pair={pair} online={online} />
@@ -3995,11 +3995,18 @@ setSelectedPair(p)
                     <span>SELL</span>
                     <strong>{hasFreshRate(selectedPair.symbol) ? fmt(selectedPair.bid, selectedPair.symbol) : "Waiting for quote"}</strong>
                   </button>
-                  {hasFreshRate(selectedPair.symbol) && (
-                    <span className={mobileControlsStyles.chartTradeSpread} aria-label={`Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`}>
-                      {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p
-                    </span>
-                  )}
+                  <span
+                    className={mobileControlsStyles.chartTradeSpread}
+                    role="note"
+                    aria-label={hasFreshRate(selectedPair.symbol)
+                      ? `Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`
+                      : "Spread unavailable until a live quote arrives"}
+                  >
+                    <small aria-hidden="true">SPREAD</small>
+                    <strong aria-hidden="true">
+                      {hasFreshRate(selectedPair.symbol) ? `${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p` : "—"}
+                    </strong>
+                  </span>
                   <button type="button" className={mobileControlsStyles.chartBuy} onClick={() => quickTrade("BUY")}
                     disabled={!hasFreshRate(selectedPair.symbol)}
                     aria-label={hasFreshRate(selectedPair.symbol) ? `Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}` : `Buy ${selectedPair.symbol} unavailable until a live quote arrives`}>

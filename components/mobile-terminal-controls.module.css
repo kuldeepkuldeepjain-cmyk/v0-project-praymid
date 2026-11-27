@@ -2508,6 +2508,7 @@
       min-height: calc(60px + env(safe-area-inset-top, 0px));
       padding: env(safe-area-inset-top, 0px) 12px 0 !important;
       border: 0 !important;
+      border-bottom: 1px solid var(--phone-border) !important;
       background: var(--phone-background) !important;
     }
 
@@ -2607,9 +2608,9 @@
       gap: 6px;
       min-height: 38px;
       padding: 0 10px !important;
-      border: 1px solid var(--phone-border) !important;
+      border: 1px solid color-mix(in srgb, var(--brand-primary) 28%, var(--phone-border)) !important;
       border-radius: 999px !important;
-      background: var(--terminal-graphite-surface-2) !important;
+      background: color-mix(in srgb, var(--brand-primary) 9%, var(--phone-background)) !important;
       color: var(--phone-foreground) !important;
       font-size: 13px;
       font-weight: 650;
@@ -2683,9 +2684,9 @@
     }
 
     & .timeframeStrip .timeframeButton[aria-pressed="true"] {
-      border-color: transparent !important;
-      background: var(--phone-foreground) !important;
-      color: var(--phone-background) !important;
+      border-color: color-mix(in srgb, var(--brand-primary) 36%, var(--phone-border)) !important;
+      background: color-mix(in srgb, var(--brand-primary) 15%, var(--phone-background)) !important;
+      color: var(--brand-primary) !important;
     }
 
     & :global(.apple-terminal-instrument-stack) {
@@ -2693,39 +2694,48 @@
     }
 
     & .chartTradeActions {
-      position: relative;
-      display: flex;
+      display: grid;
       flex: 0 0 70px;
+      grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr);
       align-items: stretch;
-      gap: 8px;
+      gap: 6px;
       padding: 4px 12px 6px;
       background: var(--phone-background);
     }
 
     & .chartTradeActions > button {
       display: flex;
-      flex: 1 1 0%;
       min-width: 0;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 1px;
-      border-radius: 14px !important;
+      border-radius: 12px !important;
       color: var(--phone-foreground) !important;
       font-variant-numeric: tabular-nums;
-      transition: filter 150ms ease;
+      transition: background-color 150ms ease, border-color 150ms ease;
     }
 
-    & .chartTradeActions > button:active {
-      filter: brightness(1.12);
+    & .chartTradeActions > button:active:not(:disabled) {
+      filter: brightness(1.15);
     }
 
     & .chartSell {
-      background: var(--phone-sell-fill) !important;
+      border: 1px solid color-mix(in srgb, var(--phone-sell-fill) 58%, var(--phone-border)) !important;
+      background: color-mix(in srgb, var(--phone-sell-fill) 22%, var(--phone-background)) !important;
     }
 
     & .chartBuy {
-      background: var(--phone-buy-fill) !important;
+      border: 1px solid color-mix(in srgb, var(--phone-buy-fill) 72%, var(--phone-border)) !important;
+      background: color-mix(in srgb, var(--phone-buy-fill) 26%, var(--phone-background)) !important;
+    }
+
+    & .chartSell > span:first-child {
+      color: var(--phone-negative);
+    }
+
+    & .chartBuy > span:first-child {
+      color: var(--phone-positive);
     }
 
     & .chartTradeActions > button:disabled {
@@ -2756,23 +2766,29 @@
     }
 
     & .chartTradeSpread {
-      position: absolute;
-      top: 50%;
-      left: 50%;
       display: flex;
-      min-width: 42px;
-      min-height: 30px;
+      min-width: 0;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 0 5px;
-      border-radius: 8px;
-      background: var(--phone-foreground);
-      color: var(--phone-background);
-      font-size: 12px;
-      font-weight: 700;
+      gap: 2px;
+      color: var(--phone-muted);
       font-variant-numeric: tabular-nums;
-      transform: translate(-50%, -50%);
       pointer-events: none;
+    }
+
+    & .chartTradeSpread small {
+      font-size: 9px;
+      font-weight: 650;
+      line-height: 1.3;
+      letter-spacing: .04em;
+    }
+
+    & .chartTradeSpread strong {
+      color: var(--phone-foreground);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.3;
     }
 
     & .dock.dock {
