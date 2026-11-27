@@ -12,7 +12,7 @@ import {
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
   Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket, LockKeyhole, FileCheck2,
   HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard, Settings, LogOut,
-  ArrowUpRight, ArrowDownRight, ArrowLeft,
+  ArrowUpRight, ArrowDownRight, ArrowLeft, House, LayoutGrid,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import tradeScrollStyles from "./terminal-trade-scroll.module.css"
@@ -1122,7 +1122,7 @@ function SupportCenterPanel() {
   )
 }
 
-// ─── Quote depth view ─���───────────────────────────────────────────────────────
+// ─── Quote depth view ─���─────────��─────────────────────────────────────────────
 
 function OrderDepth({ pair, online }: { pair: ForexPair; online: boolean }) {
   return <DepthOfMarketLadder pair={pair} online={online} />
@@ -1588,6 +1588,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [balanceLoaded, setBalanceLoaded] = useState(externalBalance > 0)
   const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order" | "portfolio" | "account">("chart")
   const [isCompactViewport, setIsCompactViewport] = useState(false)
+  const [isPhoneViewport, setIsPhoneViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
   const [tradeRestrictionNotice, setTradeRestrictionNotice] = useState<string | null>(null)
@@ -1629,11 +1630,28 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const addInstrumentBtnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-  const updateViewport = () => setIsCompactViewport(window.innerWidth < 1024)
+  const updateViewport = () => {
+    setIsCompactViewport(window.innerWidth < 1024)
+    setIsPhoneViewport(window.innerWidth < 768)
+  }
   updateViewport()
   window.addEventListener("resize", updateViewport)
   return () => window.removeEventListener("resize", updateViewport)
   }, [])
+
+  const desktopTimeframeRef = useRef<TimeFrame>("5M")
+  const wasPhoneViewportRef = useRef(false)
+  useEffect(() => {
+    if (isPhoneViewport) {
+      setTimeframe(current => {
+        desktopTimeframeRef.current = current
+        return "1H"
+      })
+    } else if (wasPhoneViewportRef.current) {
+      setTimeframe(desktopTimeframeRef.current)
+    }
+    wasPhoneViewportRef.current = isPhoneViewport
+  }, [isPhoneViewport])
 
   const dockEnabled = !isCompactViewport
   const [layoutKey, setLayoutKey] = useState(0)
@@ -3468,20 +3486,20 @@ const maxLeverage = 100
       </div>
 
       <nav className={`reference-mobile-nav ${mobileControlsStyles.dock}`} data-active-tab={mobileTab} aria-label="Trading navigation">
-        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions"); chartActionsHost?.scrollTo({ left: 0 }) }} aria-current={mobileTab === "chart" ? "page" : undefined} className={mobileTab === "chart" ? "is-active" : ""}>
-          <span className={mobileControlsStyles.dockIcon}><CandlestickChart aria-hidden="true" /></span><span>Trade</span>
+        <button type="button" onClick={() => window.location.assign("/participant/dashboard")} aria-label="Go to dashboard">
+          <span className={mobileControlsStyles.dockIcon}><House aria-hidden="true" /></span><span>Home</span>
         </button>
         <button type="button" onClick={() => setMobileTab("market")} aria-current={mobileTab === "market" ? "page" : undefined} className={mobileTab === "market" ? "is-active" : ""}>
           <span className={mobileControlsStyles.dockIcon}><BarChart2 aria-hidden="true" /></span><span>Markets</span>
         </button>
-        <button type="button" onClick={() => { setMobileTab("order"); setActivePanel("positions"); setRightPanelHidden(false); setChartExpanded(false) }} aria-current={mobileTab === "order" ? "page" : undefined} className={mobileTab === "order" ? "is-active" : ""} aria-label="Open order ticket">
-          <span className={mobileControlsStyles.dockIcon}><ArrowUpDown aria-hidden="true" /></span><span>Order</span>
+        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions"); chartActionsHost?.scrollTo({ left: 0 }) }} aria-current={mobileTab === "chart" ? "page" : undefined} className={mobileTab === "chart" ? "is-active" : ""}>
+          <span className={mobileControlsStyles.dockIcon}><CandlestickChart aria-hidden="true" /></span><span>Trade</span>
         </button>
         <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
           <span className={mobileControlsStyles.dockIcon}><PieChart aria-hidden="true" /></span><span>Portfolio</span>
         </button>
-        <button type="button" onClick={() => setMobileTab("account")} aria-label="Open account page" aria-current={mobileTab === "account" ? "page" : undefined} className={mobileTab === "account" ? "is-active" : ""}>
-          <span className={mobileControlsStyles.dockIcon}><UserRound aria-hidden="true" /></span><span>Account</span>
+        <button type="button" onClick={() => setMobileTab("account")} aria-label="Open more account tools" aria-current={mobileTab === "account" ? "page" : undefined} className={mobileTab === "account" ? "is-active" : ""}>
+          <span className={mobileControlsStyles.dockIcon}><LayoutGrid aria-hidden="true" /></span><span>More</span>
         </button>
       </nav>
 
@@ -3808,10 +3826,16 @@ setSelectedPair(match)
 		                  )}
 	                  <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch flex items-center gap-1.5 text-sm font-black text-white tracking-wider hover:text-cyan-300 transition-colors" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
 	                    <AssetLogo symbol={selectedPair.symbol} size={20} className="shrink-0" />
-	                    <span>{selectedPair.symbol}</span>
+	                    <span className="desktop-symbol">{selectedPair.symbol}</span>
+                        <span className={mobileControlsStyles.mobileSymbol}>{selectedPair.symbol.replace("/", "")}</span>
                     <ChevronDown className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-                  </button>
-                  {(() => {
+	                  </button>
+                      <span className={mobileControlsStyles.symbolChange} data-up={isUp}>
+                        {isUp ? <TrendingUp aria-hidden="true" /> : <TrendingDown aria-hidden="true" />}
+                        {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
+                        <small>· 24H</small>
+                      </span>
+	                  {(() => {
                     const cat = PAIRS_CONFIG.find(c => c.symbol === selectedPair.symbol)?.category
                     if (!cat || cat === "Forex") return null
                     const cc = CATEGORY_COLOR[cat]
@@ -3887,7 +3911,7 @@ setSelectedPair(match)
 	              {selectedPair && chartLayout === "single" ? (
 	                <ErrorBoundary key={`${selectedPair.symbol}|${isDarkTheme}|${chartReloadKey}`} fallback={
 	                  <div className="chart-silent-error">
-	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={chartExpanded} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} actionsHost={chartActionsHost} /> : null}
+	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={chartExpanded} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} actionsHost={chartActionsHost} mobilePresentation={isPhoneViewport} /> : null}
 	                  </div>
 	                }>
   <div className="terminal-single-chart-stack h-full min-h-0 w-full flex-1">
@@ -3908,6 +3932,7 @@ setSelectedPair(match)
   isRefreshingHistory={isRefreshingCandles}
   onRetryHistory={() => { void refreshCandles() }}
   actionsHost={chartActionsHost}
+  mobilePresentation={isPhoneViewport}
   />
   </div>
   </div>
@@ -3935,7 +3960,8 @@ setSelectedPair(p)
 	            {/* ── Timeframe Selector Bar (Docked at Bottom of Chart) ── */}
               <div className={mobileControlsStyles.timeframeStrip}>
                 <div className={mobileControlsStyles.timeframeGroup} role="group" aria-label="Chart timeframe">
-                  {CHART_TIMEFRAMES.map(tf => (
+	                  {(isPhoneViewport ? (["1H", "4H", "1D", "1W", "1M", "5M", "15M", "30M"] as TimeFrame[]) : CHART_TIMEFRAMES).map(tf => (
+
                     <button
                       key={tf}
                       type="button"
@@ -3948,6 +3974,24 @@ setSelectedPair(p)
                   ))}
                 </div>
               </div>
+
+              {selectedPair && (
+                <div className={mobileControlsStyles.chartTradeActions} role="group" aria-label={`${selectedPair.symbol} market trade`}>
+                  <button type="button" className={mobileControlsStyles.chartSell} onClick={() => quickTrade("SELL")}
+                    aria-label={`Sell ${selectedPair.symbol} at ${hasFreshRate(selectedPair.symbol) ? fmt(selectedPair.bid, selectedPair.symbol) : "live market price when available"}`}>
+                    <span>SELL</span>
+                    <strong>{selectedPair.bid > 0 ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
+                  </button>
+                  <span className={mobileControlsStyles.chartTradeSpread} aria-label={`Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`}>
+                    {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p
+                  </span>
+                  <button type="button" className={mobileControlsStyles.chartBuy} onClick={() => quickTrade("BUY")}
+                    aria-label={`Buy ${selectedPair.symbol} at ${hasFreshRate(selectedPair.symbol) ? fmt(selectedPair.ask, selectedPair.symbol) : "live market price when available"}`}>
+                    <span>BUY</span>
+                    <strong>{selectedPair.ask > 0 ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
+                  </button>
+                </div>
+              )}
 
 	            {isCompactViewport && instrumentOverviewPanel}
 

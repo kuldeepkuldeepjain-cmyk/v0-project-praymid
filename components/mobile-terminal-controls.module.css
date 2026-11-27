@@ -333,6 +333,7 @@
     animation: dockEnter 360ms cubic-bezier(.2, .8, .2, 1) both;
   }
 
+  .dock[data-active-tab="chart"] { --dock-active-index: 2 !important; }
   .dock[data-active-tab="market"] { --dock-active-index: 1 !important; }
   .dock[data-active-tab="order"] { --dock-active-index: 2 !important; }
   .dock[data-active-tab="portfolio"] { --dock-active-index: 3 !important; }
@@ -2466,6 +2467,375 @@
       border: 1px solid color-mix(in srgb, var(--terminal-graphite-positive) 52%, transparent) !important;
       background: color-mix(in srgb, var(--terminal-graphite-positive) 16%, transparent) !important;
       color: var(--terminal-graphite-positive) !important;
+    }
+  }
+}
+
+.mobileSymbol,
+.symbolChange,
+.chartTradeActions {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .surface.surface:global(.apple-trading-terminal.reference-terminal.mt5-terminal)[data-mobile-tab="chart"] {
+    --phone-background: var(--terminal-graphite-bg);
+    --phone-foreground: var(--terminal-graphite-text);
+    --phone-border: var(--terminal-graphite-border);
+    --phone-positive: var(--terminal-graphite-positive);
+    --phone-negative: var(--terminal-graphite-negative);
+
+    & > :global(.reference-watchlist) {
+      display: none !important;
+    }
+
+    & > :global(.mobile-terminal-header) {
+      flex: 0 0 58px;
+      height: 58px;
+      padding-inline: 14px !important;
+      border-bottom: 0 !important;
+      background: var(--phone-background) !important;
+    }
+
+    & :global(.mobile-terminal-brand-group) {
+      order: 2;
+      flex: 0 0 auto;
+      margin-inline-start: auto;
+    }
+
+    & :global(.mobile-terminal-brand) {
+      display: none !important;
+    }
+
+    & :global(.mobile-terminal-home) {
+      width: 44px;
+      height: 44px;
+      justify-content: center;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 12px;
+      background: transparent !important;
+      color: var(--terminal-graphite-muted) !important;
+    }
+
+    & :global(.mobile-terminal-home span) {
+      display: none;
+    }
+
+    & :global(.mobile-terminal-home svg) {
+      width: 21px;
+      height: 21px;
+    }
+
+    & :global(.mobile-terminal-account) {
+      order: 1;
+      flex: 0 1 auto;
+      gap: 8px;
+      max-width: calc(100% - 100px);
+      min-height: 42px;
+      padding: 0 12px !important;
+      border-radius: 999px !important;
+      background: var(--terminal-graphite-surface-2) !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.mobile-terminal-account > svg) {
+      display: block;
+      flex: 0 0 16px;
+      width: 16px;
+      height: 16px;
+      color: var(--brand-primary) !important;
+    }
+
+    & :global(.mobile-terminal-account > svg:last-child) {
+      display: block;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.mobile-terminal-account strong) {
+      font-size: 16px !important;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    & :global(.mobile-terminal-notifications) {
+      order: 3;
+      flex: 0 0 44px;
+      width: 44px;
+    }
+
+    & :global(.apple-terminal-chart-column) {
+      flex: 1 1 0% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: hidden !important;
+    }
+
+    & :global(.apple-terminal-chart-column > .chart-header.terminal-market-dock) {
+      flex: 0 0 68px;
+      height: 68px;
+      min-height: 68px;
+      padding: 6px 14px !important;
+      border: 0 !important;
+      background: var(--phone-background) !important;
+    }
+
+    & :global(.terminal-market-dock-primary-row) {
+      flex-wrap: nowrap !important;
+      justify-content: space-between;
+      gap: 8px !important;
+      height: 100%;
+    }
+
+    & :global(.terminal-market-dock-quote) {
+      position: relative;
+      flex: 1 1 auto !important;
+      width: auto !important;
+      height: 100%;
+      padding-bottom: 20px !important;
+    }
+
+    & :global(.chart-symbol-switch) {
+      gap: 8px;
+      min-height: 36px !important;
+      font-size: 22px !important;
+      font-weight: 700 !important;
+      letter-spacing: -.04em !important;
+    }
+
+    & :global(.chart-symbol-switch > img),
+    & :global(.chart-symbol-switch > span:first-child) {
+      flex-shrink: 0;
+    }
+
+    & :global(.chart-symbol-switch svg:last-child) {
+      width: 17px;
+      height: 17px;
+    }
+
+    & :global(.chart-symbol-switch > .desktop-symbol),
+    & :global(.terminal-market-dock-category),
+    & :global(.terminal-market-dock-quote-price),
+    & :global(.terminal-market-dock-quote-change),
+    & :global(.terminal-market-dock-quote) > .quoteSummary {
+      display: none !important;
+    }
+
+    & .mobileSymbol {
+      display: inline;
+    }
+
+    & .symbolChange {
+      position: absolute;
+      bottom: 2px;
+      left: 28px;
+      display: inline-flex !important;
+      align-items: center;
+      gap: 5px;
+      padding: 0 !important;
+      color: var(--phone-negative);
+      font-size: 14px !important;
+      font-weight: 600;
+      line-height: 1.4;
+      font-variant-numeric: tabular-nums;
+    }
+
+    & .symbolChange[data-up="true"] {
+      color: var(--phone-positive);
+    }
+
+    & .symbolChange svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    & .symbolChange small {
+      color: var(--terminal-graphite-muted);
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    & :global(.terminal-market-dock-tools) {
+      flex: 0 0 auto !important;
+      width: 44px !important;
+      overflow: visible !important;
+    }
+
+    & :global(.terminal-chart-market-actions) {
+      overflow: visible !important;
+    }
+
+    & :global(.terminal-chart-market-actions > :not(button[aria-label="Expand chart"], button[aria-label="Collapse chart"])) {
+      display: none !important;
+    }
+
+    & :global(.terminal-chart-market-actions > button[aria-label="Expand chart"]) {
+      display: inline-flex !important;
+      width: 44px !important;
+      min-height: 44px !important;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--phone-border) !important;
+      border-radius: 12px !important;
+      background: var(--terminal-graphite-surface) !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.terminal-trade-scroll) {
+      flex: 1 1 0% !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      padding-bottom: 0 !important;
+      overflow: hidden !important;
+    }
+
+    & :global(.mobile-terminal-chart-wrap) {
+      flex: 1 1 0% !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: hidden !important;
+    }
+
+    & :global(.terminal-single-chart-stack),
+    & :global(.terminal-native-chart-panel),
+    & :global(.apple-trading-chart),
+    & :global(.apple-trading-chart-canvas) {
+      flex: 1 1 0% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: hidden !important;
+    }
+
+    & :global(.apple-trading-chart) {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    & :global(.apple-trading-chart-canvas) {
+      height: auto !important;
+    }
+
+    & .timeframeStrip {
+      flex: 0 0 50px;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 12px;
+      border-top: 1px solid var(--phone-border);
+      border-bottom: 0;
+      background: var(--phone-background);
+    }
+
+    & .timeframeGroup {
+      gap: 4px;
+    }
+
+    & .timeframeStrip .timeframeButton {
+      min-width: 44px;
+      min-height: 42px !important;
+      padding: 0 8px;
+      border-radius: 999px;
+      color: var(--terminal-graphite-muted);
+      font-size: 14px;
+    }
+
+    & .timeframeStrip .timeframeButton[aria-pressed="true"] {
+      border-color: transparent !important;
+      background: var(--phone-foreground) !important;
+      color: var(--phone-background) !important;
+    }
+
+    & :global(.apple-terminal-instrument-stack) {
+      display: none !important;
+    }
+
+    & .chartTradeActions {
+      position: relative;
+      display: flex;
+      flex: 0 0 92px;
+      align-items: stretch;
+      gap: 8px;
+      padding: 8px 12px 12px;
+      background: var(--phone-background);
+    }
+
+    & .chartTradeActions > button {
+      display: flex;
+      flex: 1 1 0%;
+      min-width: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      border-radius: 14px !important;
+      color: var(--phone-foreground) !important;
+      font-variant-numeric: tabular-nums;
+      transition: filter 150ms ease;
+    }
+
+    & .chartTradeActions > button:active {
+      filter: brightness(1.12);
+    }
+
+    & .chartSell {
+      background: color-mix(in srgb, var(--phone-negative) 72%, var(--phone-background)) !important;
+    }
+
+    & .chartBuy {
+      background: color-mix(in srgb, var(--phone-positive) 72%, var(--phone-background)) !important;
+    }
+
+    & .chartTradeActions > button > span:first-child {
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.3;
+    }
+
+    & .chartTradeActions > button > strong {
+      max-width: 100%;
+      overflow: hidden;
+      font-size: clamp(18px, 6vw, 23px);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -.035em;
+      text-overflow: ellipsis;
+    }
+
+    & .chartTradeSpread {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      display: flex;
+      min-width: 42px;
+      min-height: 30px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+      border-radius: 8px;
+      background: var(--phone-foreground);
+      color: var(--phone-background);
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    &.surface:global(.is-chart-expanded) :global(.terminal-trade-scroll > .mobile-terminal-chart-wrap) {
+      flex: 1 1 0% !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+
+    &.surface:global(.is-chart-expanded) .expandedQuickTradeDock {
+      display: none !important;
+    }
+
+    &.surface:global(.is-chart-expanded) .chartTradeActions {
+      display: flex !important;
     }
   }
 }
