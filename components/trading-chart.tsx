@@ -193,7 +193,9 @@ export function TradingChart({
   isRefreshingHistory = false,
   onRetryHistory,
   actionsHost,
+  mobilePresentation = false,
   }: {
+    mobilePresentation?: boolean
   candles: Candle[] | null | undefined
   sym: string | null | undefined
   tf?: string
@@ -213,6 +215,7 @@ export function TradingChart({
   const safeSymbol = typeof sym === "string" && sym.trim() ? sym : "EUR/USD"
   const safeCandles = Array.isArray(candles) ? candles : []
   const palette = darkTheme ? DARK_T : T
+  const chartBackground = mobilePresentation ? palette.bgSurface : palette.bg
   const containerRef = useRef<HTMLDivElement>(null)
   const gestureLayerRef = useRef<HTMLDivElement>(null)
   const chartRef     = useRef<IChartApi | null>(null)
@@ -298,7 +301,7 @@ export function TradingChart({
 
   const priceEnvelope = useMemo(() => {
     if (candleData.length === 0) return null
-    const recent = candleData.slice(-Math.min(48, candleData.length))
+    const recent = candleData.slice(-Math.min(mobilePresentation ? 36 : 48, candleData.length))
     const high = Math.max(...recent.map((c) => c.high))
     const low = Math.min(...recent.map((c) => c.low))
     const ranges = recent.map((c) => Math.max(0, c.high - c.low)).filter(Number.isFinite)
@@ -312,14 +315,14 @@ export function TradingChart({
     const range = Math.max(rawRange, rangeFloor)
     const padding = Math.min(0.04, Math.max(0.015, (atr / Math.max(range, 1)) * 0.5))
     return { min: low - range * padding, max: high + range * padding, atr, range }
-  }, [candleData, dec])
+  }, [candleData, dec, mobilePresentation])
 
-  const ema9d  = useMemo(() => indicators.ema9 ? calcEMA(closes, 9) : null, [closes, indicators.ema9])
-  const ema21d = useMemo(() => indicators.ema21 ? calcEMA(closes, 21) : null, [closes, indicators.ema21])
-  const ema50d = useMemo(() => indicators.ema50 ? calcEMA(closes, 50) : null, [closes, indicators.ema50])
-  const bbd    = useMemo(() => indicators.bb ? calcBB(closes) : null, [closes, indicators.bb])
-  const rsid   = useMemo(() => indicators.rsi ? calcRSI(closes) : null, [closes, indicators.rsi])
-  const macdd  = useMemo(() => indicators.macd ? calcMACD(closes) : null, [closes, indicators.macd])
+  const ema9d  = useMemo(() => indicators.ema9 && !mobilePresentation ? calcEMA(closes, 9) : null, [closes, indicators.ema9, mobilePresentation])
+  const ema21d = useMemo(() => indicators.ema21 && !mobilePresentation ? calcEMA(closes, 21) : null, [closes, indicators.ema21, mobilePresentation])
+  const ema50d = useMemo(() => indicators.ema50 && !mobilePresentation ? calcEMA(closes, 50) : null, [closes, indicators.ema50, mobilePresentation])
+  const bbd    = useMemo(() => indicators.bb && !mobilePresentation ? calcBB(closes) : null, [closes, indicators.bb, mobilePresentation])
+  const rsid   = useMemo(() => indicators.rsi && !mobilePresentation ? calcRSI(closes) : null, [closes, indicators.rsi, mobilePresentation])
+  const macdd  = useMemo(() => indicators.macd && !mobilePresentation ? calcMACD(closes) : null, [closes, indicators.macd, mobilePresentation])
 
   function toLineData(arr: (number | null)[]): LineData[] {
     const seen = new Set<number>()
@@ -355,7 +358,7 @@ export function TradingChart({
     const chart = createChart(container, {
       autoSize: false,
       layout: {
-        background: { type: ColorType.Solid, color: palette.bg },
+        background: { type: ColorType.Solid, color: chartBackground },
         textColor:  palette.textDim,
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif",
         fontSize:   12,
@@ -385,7 +388,7 @@ export function TradingChart({
       rightPriceScale: {
         borderColor: palette.border,
         textColor:   palette.textDim,
-        scaleMargins: { top: 0.08, bottom: 0.18 },
+        scaleMargins: mobilePresentation ? { top: 0.05, bottom: 0.12 } : { top: 0.08, bottom: 0.18 },
         entireTextOnly: false,
         autoScale: true,
         alignLabels: true,
@@ -559,7 +562,7 @@ export function TradingChart({
       macdSigRef.current   = null
       macdHistRef.current  = null
     }
-  }, [darkTheme]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [darkTheme, mobilePresentation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const layer = gestureLayerRef.current
@@ -743,13 +746,13 @@ export function TradingChart({
       return
     }
     if (count > 0 && (timeframeChanged || previousCount === 0)) {
-      const visibleBars = Math.min(96, count)
+      const visibleBars = Math.min(mobilePresentation ? 38 : 96, count)
       const rightOffset = Math.max(4, Math.round(visibleBars * 0.06))
       userAdjustedViewRef.current = false
       autoFitRequestedRef.current = true
       chart.timeScale().setVisibleLogicalRange({ from: count - visibleBars, to: count + rightOffset })
     }
-  }, [candleData, volData, tf])
+  }, [candleData, volData, tf, mobilePresentation])
 
   // ── Update EMA ──────���────────────────────────��───��───────────────────────────
   useEffect(() => {
@@ -781,7 +784,7 @@ export function TradingChart({
   // ── Update RSI ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!rsiSerRef.current || !rsiOb70Ref.current || !rsiOs30Ref.current) return
-    const active = chartPane === "rsi" ? rsid : null
+    const active = !mobilePresentation && chartPane === "rsi" ? rsid : null
     const show = !!active
     rsiSerRef.current.setData(active ? toLineData(active) : [])
     rsiSerRef.current.applyOptions({ visible: show })
@@ -792,12 +795,12 @@ export function TradingChart({
     chartRef.current?.priceScale("rsi").applyOptions({
       scaleMargins: show ? { top: 0.70, bottom: 0.02 } : { top: 0.99, bottom: 0 },
     })
-  }, [rsid, chartPane]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rsid, chartPane, mobilePresentation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Update MACD ─────────────────────────────────────────────────────���───���────
   useEffect(() => {
     if (!macdSerRef.current || !macdSigRef.current || !macdHistRef.current) return
-    const active = chartPane === "macd" ? macdd : null
+    const active = !mobilePresentation && chartPane === "macd" ? macdd : null
     const show = !!active
     macdSerRef.current.setData(active ? toLineData(active.macd) : [])
     macdSigRef.current.setData(active ? toLineData(active.signal) : [])
@@ -808,16 +811,16 @@ export function TradingChart({
     chartRef.current?.priceScale("macd").applyOptions({
       scaleMargins: show ? { top: 0.70, bottom: 0.02 } : { top: 0.99, bottom: 0 },
     })
-  }, [macdd, chartPane]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [macdd, chartPane, mobilePresentation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Volume visibility ─────────────────────�����──────────────────────────────────
   useEffect(() => {
     if (!volSerRef.current) return
-    volSerRef.current.applyOptions({ visible: indicators.volume })
+    volSerRef.current.applyOptions({ visible: indicators.volume && !mobilePresentation })
     chartRef.current?.priceScale("vol").applyOptions({
-      scaleMargins: indicators.volume ? { top: 0.84, bottom: 0 } : { top: 0.99, bottom: 0 },
+      scaleMargins: indicators.volume && !mobilePresentation ? { top: 0.84, bottom: 0 } : { top: 0.99, bottom: 0 },
     })
-  }, [indicators.volume])
+  }, [indicators.volume, mobilePresentation])
 
   // ── Adaptive market scale and live bid/ask overlays ─────────────────────────
   useEffect(() => {
@@ -933,10 +936,10 @@ export function TradingChart({
 
   // Sub-pane config helpers
   const subPaneColor = chartPane === "rsi" ? palette.emerald : palette.orange
-  const subPaneLabel = chartPane !== "none" && indicators[chartPane] ? chartPane.toUpperCase() : null
+  const subPaneLabel = !mobilePresentation && chartPane !== "none" && indicators[chartPane] ? chartPane.toUpperCase() : null
 
   return (
-    <div className="apple-trading-chart terminal-chart-surface relative flex min-h-0 min-w-0 w-full h-full flex-col overflow-hidden select-none" style={{ background: "#0d1724" }}>
+    <div className="apple-trading-chart terminal-chart-surface relative flex min-h-0 min-w-0 w-full h-full flex-col overflow-hidden select-none" style={{ background: chartBackground }}>
 
       {actionsHost && createPortal(
         <>
@@ -1142,7 +1145,7 @@ export function TradingChart({
       </div>
 
       {/* ── Chart canvas ───────────────────────────���──���──────────────���──────────── */}
-  <div ref={containerRef} className="apple-trading-chart-canvas native-chart-gesture-surface relative flex-1 min-h-0 min-w-0 w-full" aria-label={`${safeSymbol} interactive native candlestick chart`} role="img" style={{ background: darkTheme ? DARK_T.bg : T.bg, contain: "size layout" }}>
+  <div ref={containerRef} className="apple-trading-chart-canvas native-chart-gesture-surface relative flex-1 min-h-0 min-w-0 w-full" aria-label={`${safeSymbol} interactive native candlestick chart`} role="img" style={{ background: chartBackground, contain: "size layout" }}>
 
   {/* Sub-pane label overlay in bottom-left of chart */}
 

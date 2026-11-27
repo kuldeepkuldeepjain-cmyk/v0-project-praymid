@@ -333,6 +333,7 @@
     animation: dockEnter 360ms cubic-bezier(.2, .8, .2, 1) both;
   }
 
+  .dock[data-active-tab="chart"] { --dock-active-index: 2 !important; }
   .dock[data-active-tab="market"] { --dock-active-index: 1 !important; }
   .dock[data-active-tab="order"] { --dock-active-index: 2 !important; }
   .dock[data-active-tab="portfolio"] { --dock-active-index: 3 !important; }
@@ -2466,6 +2467,370 @@
       border: 1px solid color-mix(in srgb, var(--terminal-graphite-positive) 52%, transparent) !important;
       background: color-mix(in srgb, var(--terminal-graphite-positive) 16%, transparent) !important;
       color: var(--terminal-graphite-positive) !important;
+    }
+  }
+}
+
+.mobileSymbol,
+.symbolChange,
+.chartTradeActions,
+.mobileChartBalance {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .surface.surface:global(.apple-trading-terminal.reference-terminal.mt5-terminal)[data-mobile-tab="chart"] {
+    --phone-background: var(--terminal-graphite-surface);
+    --phone-foreground: var(--terminal-graphite-text);
+    --phone-border: var(--terminal-graphite-border);
+    --phone-positive: var(--terminal-graphite-positive);
+    --phone-negative: var(--terminal-graphite-negative);
+    --phone-dock-height: calc(54px + env(safe-area-inset-bottom, 0px));
+    --phone-sell-fill: #c2194d;
+    --phone-buy-fill: #117b63;
+
+    & > :global(.reference-watchlist),
+    & > :global(.mobile-terminal-header) {
+      display: none !important;
+    }
+
+    & :global(.apple-terminal-chart-column) {
+      flex: 1 1 0% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: hidden !important;
+    }
+
+    & :global(.apple-terminal-chart-column > .chart-header.terminal-market-dock) {
+      flex: 0 0 calc(60px + env(safe-area-inset-top, 0px));
+      height: calc(60px + env(safe-area-inset-top, 0px));
+      min-height: calc(60px + env(safe-area-inset-top, 0px));
+      padding: env(safe-area-inset-top, 0px) 12px 0 !important;
+      border: 0 !important;
+      border-bottom: 1px solid var(--phone-border) !important;
+      background: var(--phone-background) !important;
+    }
+
+    & :global(.terminal-market-dock-primary-row) {
+      flex-wrap: nowrap !important;
+      justify-content: space-between;
+      gap: 8px !important;
+      height: 100%;
+    }
+
+    & :global(.terminal-market-dock-quote) {
+      position: relative;
+      flex: 1 1 auto !important;
+      width: auto !important;
+      height: 100%;
+      padding-bottom: 20px !important;
+    }
+
+    & :global(.chart-symbol-switch) {
+      gap: 8px;
+      min-height: 36px !important;
+      font-size: 22px !important;
+      font-weight: 700 !important;
+      letter-spacing: -.04em !important;
+    }
+
+    & :global(.chart-symbol-switch > img),
+    & :global(.chart-symbol-switch > span:first-child) {
+      flex-shrink: 0;
+    }
+
+    & :global(.chart-symbol-switch svg:last-child) {
+      width: 17px;
+      height: 17px;
+    }
+
+    & :global(.chart-symbol-switch > .desktop-symbol),
+    & :global(.terminal-market-dock-category),
+    & :global(.terminal-market-dock-quote-price),
+    & :global(.terminal-market-dock-quote-change),
+    & :global(.terminal-market-dock-quote) > .quoteSummary {
+      display: none !important;
+    }
+
+    & .mobileSymbol {
+      display: inline;
+    }
+
+    & .symbolChange {
+      position: absolute;
+      bottom: 2px;
+      left: 28px;
+      display: inline-flex !important;
+      align-items: center;
+      gap: 5px;
+      padding: 0 !important;
+      color: var(--phone-negative);
+      font-size: 14px !important;
+      font-weight: 600;
+      line-height: 1.4;
+      font-variant-numeric: tabular-nums;
+    }
+
+    & .symbolChange[data-up="true"] {
+      color: var(--phone-positive);
+    }
+
+    & .symbolChange[data-live="false"] {
+      color: var(--phone-muted);
+    }
+
+    & .symbolChange svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    & .symbolChange small {
+      color: var(--terminal-graphite-muted);
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    & :global(.terminal-market-dock-tools) {
+      flex: 0 0 auto !important;
+      width: auto !important;
+      overflow: visible !important;
+    }
+
+    & :global(.terminal-chart-market-actions) {
+      display: none !important;
+    }
+
+    & .mobileChartBalance {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 38px;
+      padding: 0 10px !important;
+      border: 1px solid color-mix(in srgb, var(--brand-primary) 28%, var(--phone-border)) !important;
+      border-radius: 999px !important;
+      background: color-mix(in srgb, var(--brand-primary) 9%, var(--phone-background)) !important;
+      color: var(--phone-foreground) !important;
+      font-size: 13px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    & .mobileChartBalance svg {
+      width: 15px;
+      height: 15px;
+      color: var(--brand-primary);
+    }
+
+    & :global(.terminal-trade-scroll) {
+      flex: 1 1 0% !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      padding-bottom: 0 !important;
+      overflow: hidden !important;
+    }
+
+    & :global(.mobile-terminal-chart-wrap) {
+      flex: 1 1 0% !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: hidden !important;
+    }
+
+    & :global(.terminal-single-chart-stack),
+    & :global(.terminal-native-chart-panel),
+    & :global(.apple-trading-chart),
+    & :global(.apple-trading-chart-canvas) {
+      flex: 1 1 0% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: hidden !important;
+    }
+
+    & :global(.apple-trading-chart) {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    & :global(.apple-trading-chart-canvas) {
+      height: auto !important;
+    }
+
+    & .timeframeStrip {
+      flex: 0 0 42px;
+      align-items: center;
+      gap: 4px;
+      padding: 0 12px;
+      border-top: 1px solid var(--phone-border);
+      border-bottom: 0;
+      background: var(--phone-background);
+    }
+
+    & .timeframeGroup {
+      gap: 4px;
+    }
+
+    & .timeframeStrip .timeframeButton {
+      min-width: 44px;
+      min-height: 40px !important;
+      padding: 0 8px;
+      border-radius: 999px;
+      color: var(--terminal-graphite-muted);
+      font-size: 14px;
+    }
+
+    & .timeframeStrip .timeframeButton[aria-pressed="true"] {
+      border-color: color-mix(in srgb, var(--brand-primary) 36%, var(--phone-border)) !important;
+      background: color-mix(in srgb, var(--brand-primary) 15%, var(--phone-background)) !important;
+      color: var(--brand-primary) !important;
+    }
+
+    & :global(.apple-terminal-instrument-stack) {
+      display: none !important;
+    }
+
+    & .chartTradeActions {
+      display: grid;
+      flex: 0 0 70px;
+      grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr);
+      align-items: stretch;
+      gap: 6px;
+      padding: 4px 12px 6px;
+      background: var(--phone-background);
+    }
+
+    & .chartTradeActions > button {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      border-radius: 12px !important;
+      color: var(--phone-foreground) !important;
+      font-variant-numeric: tabular-nums;
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    & .chartTradeActions > button:active:not(:disabled) {
+      filter: brightness(1.15);
+    }
+
+    & .chartSell {
+      border: 1px solid color-mix(in srgb, var(--phone-sell-fill) 58%, var(--phone-border)) !important;
+      background: color-mix(in srgb, var(--phone-sell-fill) 22%, var(--phone-background)) !important;
+    }
+
+    & .chartBuy {
+      border: 1px solid color-mix(in srgb, var(--phone-buy-fill) 72%, var(--phone-border)) !important;
+      background: color-mix(in srgb, var(--phone-buy-fill) 26%, var(--phone-background)) !important;
+    }
+
+    & .chartSell > span:first-child {
+      color: var(--phone-negative);
+    }
+
+    & .chartBuy > span:first-child {
+      color: var(--phone-positive);
+    }
+
+    & .chartTradeActions > button:disabled {
+      cursor: not-allowed;
+      opacity: .84 !important;
+    }
+
+    & .chartTradeActions[data-live="false"] > button > strong {
+      font-size: 14px;
+      font-weight: 550;
+      letter-spacing: 0;
+    }
+
+    & .chartTradeActions > button > span:first-child {
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.3;
+    }
+
+    & .chartTradeActions > button > strong {
+      max-width: 100%;
+      overflow: hidden;
+      font-size: clamp(18px, 5.8vw, 23px);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -.035em;
+      text-overflow: ellipsis;
+    }
+
+    & .chartTradeSpread {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: var(--phone-muted);
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+    }
+
+    & .chartTradeSpread small {
+      font-size: 9px;
+      font-weight: 650;
+      line-height: 1.3;
+      letter-spacing: .04em;
+    }
+
+    & .chartTradeSpread strong {
+      color: var(--phone-foreground);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    & .dock.dock {
+      height: var(--phone-dock-height) !important;
+      min-height: var(--phone-dock-height) !important;
+      padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    & .dock.dock > button {
+      min-height: 48px !important;
+      gap: 2px !important;
+      font-size: 11px !important;
+    }
+
+    & .dock.dock .dockIcon {
+      width: 24px;
+      height: 24px;
+    }
+
+    & .dock.dock .dockIcon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    & .dock::before {
+      top: 4px;
+      bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    }
+
+    &.surface:global(.is-chart-expanded) :global(.terminal-trade-scroll > .mobile-terminal-chart-wrap) {
+      flex: 1 1 0% !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+
+    &.surface:global(.is-chart-expanded) .expandedQuickTradeDock {
+      display: none !important;
+    }
+
+    &.surface:global(.is-chart-expanded) .chartTradeActions {
+      display: flex !important;
     }
   }
 }
