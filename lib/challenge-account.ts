@@ -78,10 +78,25 @@ export function getChallengeSnapshot(
   }
 }
 
-export function calculateChallengeMargin(pair: string, lotSize: number, price: number, leverage: number) {
+export type ChallengeConversionRates = Record<string, { bid: number; ask: number }>
+
+function quoteToUsd(pair: string, price: number, rates?: ChallengeConversionRates | null): number | null {
+  const [base, quote] = pair.split("/")
+  if (quote === "USD") return 1
+  if (base === "USD") return 1 / price
+  const direct = rates?.[`${quote}/USD`]
+  if (direct && direct.bid > 0 && direct.ask >= direct.bid) return (direct.bid + direct.ask) / 2
+  const inverse = rates?.[`USD/${quote}`]
+  if (inverse && inverse.bid > 0 && inverse.ask >= inverse.bid) return 2 / (inverse.bid + inverse.ask)
+  return null
+}
+
+export function calculateChallengeMargin(pair: string, lotSize: number, price: number, leverage: number, rates?: ChallengeConversionRates | null) {
   if (![lotSize, price, leverage].every(Number.isFinite) || lotSize <= 0 || price <= 0 || leverage <= 0) return 0
-  const base = pair.split("/")[0]
-  const notional = base === "USD" ? lotSize * contractSize(pair) : lotSize * contractSize(pair) * price
+  const [base] = pair.split("/")
+  const conversion = quoteToUsd(pair, price, rates)
+  if (conversion === null) return 0
+  const notional = base === "USD" ? lotSize * contractSize(pair) : lotSize * contractSize(pair) * price * conversion
   return Number((notional / leverage).toFixed(2))
 }
 
@@ -92,6 +107,7 @@ export function calculateChallengePnl(
   openPrice: number,
   closePrice: number,
   swap = 0,
+  rates?: ChallengeConversionRates | null,
 ) {
   if (![lotSize, openPrice, closePrice, swap].every(Number.isFinite) || lotSize <= 0 || openPrice <= 0 || closePrice <= 0) {
     return { pnl: 0, pips: 0 }
@@ -100,13 +116,12 @@ export function calculateChallengePnl(
   const pipSize = pip(pair)
   if (pipSize <= 0) return { pnl: 0, pips: 0 }
 
+  const conversion = quoteToUsd(pair, closePrice, rates)
+  if (conversion === null) return { pnl: Number.NaN, pips: 0 }
   const directionMultiplier = direction === "BUY" ? 1 : -1
   const priceDelta = (closePrice - openPrice) * directionMultiplier
   const pipCount = priceDelta / pipSize
-  const isUsdBase = pair.split("/")[0] === "USD"
-  const pipValue = isUsdBase
-    ? (lotSize * contractSize(pair) * pipSize) / closePrice
-    : lotSize * contractSize(pair) * pipSize
+  const pipValue = lotSize * contractSize(pair) * pipSize * conversion
 
   return {
     pnl: Number((pipCount * pipValue + swap).toFixed(2)),

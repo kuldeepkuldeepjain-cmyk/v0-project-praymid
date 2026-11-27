@@ -237,7 +237,14 @@ function ChallengeContent() {
           </Card>
         ) : null}
 
-        {status === "active" && plan && metrics ? (
+        {status === "active" && plan && metrics?.quotesCurrent === false && (
+          <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
+            <CardHeader><CardTitle className="text-white">Evaluation paused for market quotes</CardTitle></CardHeader>
+            <CardContent className="text-sm leading-6 text-slate-400">Your positions and trading history are safe. Equity and loss limits will update when fresh market and currency conversion quotes are available. New orders remain paused until then.</CardContent>
+          </Card>
+        )}
+
+        {status === "active" && plan && metrics && metrics.quotesCurrent !== false ? (
           <>
             <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
               <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

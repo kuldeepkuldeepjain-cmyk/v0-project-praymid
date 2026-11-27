@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
         for (const trade of trades) {
           const price = getChallengeExecutionPrice(rates, trade.pair, trade.direction, true)
           if (price === null) throw new Error('Quote unavailable')
-          const { pnl, pips } = calculateChallengePnl(trade.pair, trade.direction, Number(trade.lot_size), Number(trade.open_price), price)
+          const { pnl, pips } = calculateChallengePnl(trade.pair, trade.direction, Number(trade.lot_size), Number(trade.open_price), price, 0, rates)
+          if (!Number.isFinite(pnl)) throw new Error('Currency conversion quote unavailable')
           const amount = Number((Number(trade.margin) + pnl).toFixed(2))
           const next = Number((balance + amount).toFixed(2))
           await client.query(`UPDATE forex_trades SET status = 'closed', close_reason = 'day_end', close_price = $2, close_time = $3,

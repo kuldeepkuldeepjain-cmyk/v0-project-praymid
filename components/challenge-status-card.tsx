@@ -44,7 +44,9 @@ export function ChallengeStatusCard({ onStatusChange }: { onStatusChange?: (stat
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#d6b66b]">{plan?.name || "EliteFund Challenge"}</p>
               <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2.5 py-1 text-xs font-semibold text-amber-100">{statusText}</span>
             </div>
-            {status === "active" && metrics ? (
+            {status === "active" && metrics?.quotesCurrent === false ? (
+              <p className="mt-3 text-sm leading-6 text-slate-400">Waiting for fresh market quotes to calculate evaluation equity and loss limits. Trading is paused until quotes return.</p>
+            ) : status === "active" && metrics ? (
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
                 <div>
                   <p className="text-xs text-slate-400">Evaluation equity</p>
@@ -72,7 +74,7 @@ export function ChallengeStatusCard({ onStatusChange }: { onStatusChange?: (stat
                         : "Choose a plan, submit the Challenge fee, and start your evaluation."}
               </p>
             )}
-            {status === "active" && metrics && (
+            {status === "active" && metrics && metrics.quotesCurrent !== false && (
               <div className="mt-3 flex items-center gap-3">
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-label="Profit target progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
                   <div className="h-full rounded-full bg-[#d6b66b] transition-[width]" style={{ width: `${progress}%` }} />

@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
         [participant.email],
       )).rows
       const openPnl = getChallengeOpenPositionPnl(openTrades, rates)
+      if (!openPnl.complete) return { ...summary, metrics: { quotesCurrent: false } }
       const openMargin = openTrades.reduce((total, trade) => total + (Number(trade.margin) || 0), 0)
       const balance = Number(participant.account_balance) || 0
       const equity = Number((balance + openMargin + openPnl.pnl).toFixed(2))

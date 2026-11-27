@@ -227,7 +227,7 @@ export async function POST(req: NextRequest) {
     }
 
     const riskCheckedTrade = action === "open" && challengeExecutionPrice !== null
-      ? { ...trade, openPrice: challengeExecutionPrice, margin: calculateChallengeMargin(trade.pair, Number(trade.lotSize), challengeExecutionPrice, Number(trade.leverage)) }
+      ? { ...trade, openPrice: challengeExecutionPrice, margin: calculateChallengeMargin(trade.pair, Number(trade.lotSize), challengeExecutionPrice, Number(trade.leverage), challengeRates) }
       : trade
     const tradeRisk = action === "open" || action === "pending"
       ? await inspectTradeRisk({ email: participant_email, trade: riskCheckedTrade })
@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
         if (accountIsChallenge && (account.challenge_status !== "active" || !accountChallengePlan)) {
           throw Object.assign(new Error("Challenge trading is not active."), { status: 403 })
         }
-        const margin = calculateChallengeMargin(trade.pair, Number(trade.lotSize), executionPrice, Number(trade.leverage))
+        const margin = calculateChallengeMargin(trade.pair, Number(trade.lotSize), executionPrice, Number(trade.leverage), challengeRates)
         if (!Number.isFinite(margin) || margin <= 0) throw Object.assign(new Error("Invalid margin"), { status: 400 })
         if (account.account_type === "funded" && margin < 3000) {
           throw Object.assign(new Error("Funded accounts require a minimum order amount of 3000."), { status: 400 })
@@ -395,12 +395,25 @@ export async function POST(req: NextRequest) {
       try {
         await client.query("BEGIN")
         const accountResult = await client.query(
-          `SELECT id, account_type, account_balance, funded_amount, funded_initial_balance, funded_breach_status
+          `SELECT id, account_type, account_balance, funded_amount, funded_initial_balance, funded_breach_status,
+                  challenge_status, challenge_plan_key, account_frozen, is_frozen
            FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
           [participant_email],
         )
         const account = accountResult.rows[0]
         if (!account) throw Object.assign(new Error("Participant account was not found"), { status: 404 })
+        if (account.account_type === "challenge") {
+          const lockedPlan = getChallengePlan(account.challenge_plan_key)
+          if (account.challenge_status !== "active" || !lockedPlan) {
+            throw Object.assign(new Error("Challenge trading is not active."), { status: 403 })
+          }
+          if (Number(trade.leverage) > lockedPlan.leverage) {
+            throw Object.assign(new Error(`Challenge leverage is capped at ${lockedPlan.leverage}:1.`), { status: 400 })
+          }
+        }
+        if (account.account_type !== "funded" && (account.account_frozen || account.is_frozen)) {
+          throw Object.assign(new Error("Account is frozen"), { status: 403 })
+        }
         if (account.account_type === "funded") {
           if (account.funded_breach_status === "breached") {
             throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Choose a new plan and submit payment to restart trading."), { status: 403 })
@@ -509,7 +522,8 @@ export async function POST(req: NextRequest) {
           const closedMargin = Number((Number(parent.margin) * fractionClosed).toFixed(2))
           const nextLots = Number((parentLots - closeLots).toFixed(2))
           const nextMargin = Number((Number(parent.margin) - closedMargin).toFixed(2))
-          const calculated = calculateChallengePnl(parent.pair, parent.direction, closeLots, Number(parent.open_price), executionPrice)
+          const calculated = calculateChallengePnl(parent.pair, parent.direction, closeLots, Number(parent.open_price), executionPrice, 0, challengeRates)
+          if (!Number.isFinite(calculated.pnl)) throw Object.assign(new Error("A current currency conversion quote is unavailable."), { status: 503 })
           const actualCloseTime = new Date().toISOString()
           const participantResult = await client.query(
             `SELECT id, account_balance, challenge_status, challenge_plan_key,
@@ -662,7 +676,8 @@ export async function POST(req: NextRequest) {
         const nextMargin = Number((Number(parent.margin) - closedMargin).toFixed(2))
         const closedSwap = isChallengeAccount ? 0 : Number(((Number(parent.swap) || 0) * fractionClosed).toFixed(6))
         const remainingSwap = isChallengeAccount ? 0 : Number(((Number(parent.swap) || 0) - closedSwap).toFixed(6))
-        const calculated = calculateChallengePnl(parent.pair, parent.direction, closeLots, Number(parent.open_price), executionPrice, closedSwap)
+        const calculated = calculateChallengePnl(parent.pair, parent.direction, closeLots, Number(parent.open_price), executionPrice, closedSwap, challengeRates)
+        if (!Number.isFinite(calculated.pnl)) throw Object.assign(new Error("A current currency conversion quote is unavailable."), { status: 503 })
         const closeTime = new Date().toISOString()
         const closeDuration = formatTradeDuration(parent.open_timestamp)
         const participantResult = await client.query(
@@ -862,7 +877,9 @@ export async function PATCH(req: NextRequest) {
           Number(currentTrade.open_price),
           actualClosePrice,
           actualSwap,
+          challengeRates,
         )
+        if (!Number.isFinite(calculation.pnl)) throw Object.assign(new Error("A current currency conversion quote is unavailable."), { status: 503 })
         const actualPnl = calculation.pnl
         const actualPips = calculation.pips
         const actualMargin = Number(currentTrade.margin)
@@ -940,7 +957,7 @@ export async function PATCH(req: NextRequest) {
               [participant_email],
             )
             const remainingMargin = Number(remainingMarginResult.rows[0]?.amount) || 0
-            const equityBefore = Number((balanceBefore + actualMargin + remainingMargin + (remainingPnl.complete ? remainingPnl.pnl : 0)).toFixed(2))
+            const equityBefore = Number((balanceBefore + actualMargin + remainingMargin + actualPnl + remainingPnl.pnl).toFixed(2))
             const today = utcDateKey()
             const isNewChallengeDay = utcDateColumnKey(participant.challenge_day_start_date) !== today
             const dayStartEquity = isNewChallengeDay
@@ -1120,7 +1137,8 @@ export async function PATCH(req: NextRequest) {
             await client.query("ROLLBACK")
             return NextResponse.json({ success: false, error: "Stop loss or take profit is invalid at the verified fill price." }, { status: 400 })
           }
-          const margin = calculateChallengeMargin(pending.pair, Number(pending.lot_size), executionPrice, Number(pending.leverage))
+          const margin = calculateChallengeMargin(pending.pair, Number(pending.lot_size), executionPrice, Number(pending.leverage), rates)
+          if (margin <= 0) throw Object.assign(new Error("A current currency conversion quote is unavailable."), { status: 503 })
           const balanceBefore = Number(participant.account_balance) || 0
           if (balanceBefore < margin) {
             await client.query("ROLLBACK")
@@ -1222,7 +1240,7 @@ export async function PATCH(req: NextRequest) {
           if (!areTradeStopsValid(pending.direction, executionPrice, pending.sl, pending.tp)) {
             throw Object.assign(new Error("Stop loss or take profit is invalid at the verified fill price."), { status: 400 })
           }
-          const margin = calculateChallengeMargin(pending.pair, Number(pending.lot_size), executionPrice, Number(pending.leverage))
+          const margin = calculateChallengeMargin(pending.pair, Number(pending.lot_size), executionPrice, Number(pending.leverage), rates)
           if (margin < 3000) throw Object.assign(new Error("Funded accounts require a minimum order amount of 3000."), { status: 400 })
           const balanceBefore = Number(account.account_balance) || 0
           if (balanceBefore < margin) throw Object.assign(new Error("Insufficient balance to fill this funded order."), { status: 400 })
@@ -1271,12 +1289,13 @@ export async function PATCH(req: NextRequest) {
         }
         if (pending.status !== "pending") throw Object.assign(new Error("Pending order not found."), { status: 404 })
         const accountResult = await client.query(
-          `SELECT id, account_balance, account_frozen, is_frozen FROM participants
+          `SELECT id, account_type, account_balance, account_frozen, is_frozen FROM participants
            WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
           [participant_email],
         )
         const account = accountResult.rows[0]
         if (!account) throw Object.assign(new Error("Participant account was not found."), { status: 404 })
+        if (account.account_type !== "normal") throw Object.assign(new Error("Account type changed. Refresh your orders."), { status: 409 })
         if (account.account_frozen || account.is_frozen) throw Object.assign(new Error("Account is frozen."), { status: 403 })
         const executionPrice = getChallengeExecutionPrice(rates, pending.pair, pending.direction)
         if (executionPrice === null) throw Object.assign(new Error("A current quote is unavailable for this instrument."), { status: 503 })
@@ -1286,7 +1305,7 @@ export async function PATCH(req: NextRequest) {
         if (!areTradeStopsValid(pending.direction, executionPrice, pending.sl, pending.tp)) {
           throw Object.assign(new Error("Stop loss or take profit is invalid at the verified fill price."), { status: 400 })
         }
-        const margin = calculateChallengeMargin(pending.pair, Number(pending.lot_size), executionPrice, Number(pending.leverage))
+        const margin = calculateChallengeMargin(pending.pair, Number(pending.lot_size), executionPrice, Number(pending.leverage), rates)
         const balanceBefore = Number(account.account_balance) || 0
         if (balanceBefore < margin) throw Object.assign(new Error("Insufficient balance to fill this order."), { status: 400 })
         const fillTime = new Date().toISOString()
