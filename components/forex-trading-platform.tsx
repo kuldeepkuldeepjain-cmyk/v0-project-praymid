@@ -21,6 +21,7 @@ import mobileControlsStyles from "./mobile-terminal-controls.module.css"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { CHART_TIMEFRAMES, useTerminalCandles, type TimeFrame } from "@/hooks/use-terminal-candles"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
+import { calculateChallengeMargin } from "@/lib/challenge-account"
 import {
   FUNDED_MAX_DRAWDOWN_PERCENT,
   getFundedBaseAmount,
@@ -239,19 +240,24 @@ function fmt(price: number | null | undefined, sym: string): string {
 // P&L = (currentPrice - openPrice) × direction × lots × contractSize  (for USD-quote)
 // P&L = (currentPrice - openPrice) × direction × lots × contractSize / currentPrice  (for USD-base)
 
-function pipValue(sym: string, lots: number, currentPrice: number): number {
+function pipValue(sym: string, lots: number, currentPrice: number, pairs?: ForexPair[]): number {
   if (!Number.isFinite(currentPrice) || currentPrice <= 0 || !Number.isFinite(lots) || lots <= 0) return 0
-  const cs   = contractSize(sym)
-  const ps   = pip(sym)
-  const base = (sym || "").split("/")[0]
-
-  if (base === "USD") {
-    return (lots * cs * ps) / currentPrice
-  }
-  return lots * cs * ps
+  const cs = contractSize(sym)
+  const ps = pip(sym)
+  const [base, quote] = (sym || "").split("/")
+  if (base === "USD") return (lots * cs * ps) / currentPrice
+  if (quote === "USD" || !pairs) return lots * cs * ps
+  const direct = pairs.find(pair => pair.symbol === `${quote}/USD`)
+  const inverse = pairs.find(pair => pair.symbol === `USD/${quote}`)
+  const conversion = direct && direct.bid > 0 && direct.ask >= direct.bid
+    ? (direct.bid + direct.ask) / 2
+    : inverse && inverse.bid > 0 && inverse.ask >= inverse.bid
+      ? 2 / (inverse.bid + inverse.ask)
+      : 0
+  return lots * cs * ps * conversion
 }
 
-function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize: number; leverage: number }, currentPrice: number, sym: string): {
+function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize: number; leverage: number }, currentPrice: number, sym: string, pairs?: ForexPair[]): {
   pnl: number; pipCount: number; returnOnMargin: number; margin: number
 } {
   if (!trade || !Number.isFinite(currentPrice) || currentPrice <= 0) {
@@ -263,11 +269,11 @@ function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize:
   const ps        = pip(sym)
   const pipCount  = ps > 0 ? priceDiff / ps : 0
 
-  const pv     = pipValue(sym, trade.lotSize, currentPrice)
+  const pv     = pipValue(sym, trade.lotSize, currentPrice, pairs)
   const pnlVal = pipCount * pv
   const pnl    = Number.isFinite(pnlVal) ? parseFloat(pnlVal.toFixed(2)) : 0
 
-  const marginVal = calcMargin(sym, trade.lotSize, openPrice, trade.leverage)
+  const marginVal = calcMargin(sym, trade.lotSize, openPrice, trade.leverage, pairs)
   const margin    = Number.isFinite(marginVal) ? marginVal : 0
 
   const returnOnMargin = margin > 0 ? parseFloat(((pnl / margin) * 100).toFixed(2)) : 0
@@ -283,13 +289,17 @@ function defaultLotsForOrderValue(sym: string, price: number, targetValue = 3000
   return lots.toFixed(2)
 }
 
-function calcMargin(sym: string, lots: number, price: number, leverage: number): number {
-  const safeLev   = Number.isFinite(leverage) && leverage > 0 ? leverage : 100
-  const safeLots  = Number.isFinite(lots) && lots > 0 ? lots : 0.01
+function calcMargin(sym: string, lots: number, price: number, leverage: number, pairs?: ForexPair[]): number {
+  const safeLev = Number.isFinite(leverage) && leverage > 0 ? leverage : 100
+  const safeLots = Number.isFinite(lots) && lots > 0 ? lots : 0.01
   const safePrice = Number.isFinite(price) && price > 0 ? price : 1
-  const cs        = contractSize(sym)
-  const base      = (sym || "").split("/")[0]
-  const notional  = base === "USD" ? safeLots * cs : safeLots * cs * safePrice
+  if (pairs) {
+    const rates = Object.fromEntries(pairs.map(pair => [pair.symbol, { bid: pair.bid, ask: pair.ask }]))
+    return calculateChallengeMargin(sym, safeLots, safePrice, safeLev, rates)
+  }
+  const cs = contractSize(sym)
+  const base = (sym || "").split("/")[0]
+  const notional = base === "USD" ? safeLots * cs : safeLots * cs * safePrice
   return notional / safeLev
 }
 
@@ -1122,7 +1132,7 @@ function SupportCenterPanel() {
   )
 }
 
-// ─── Quote depth view ─���───���─────��─────────────────────────────────────────────
+// ─── Quote depth view ─���───�����─────��─────────────────────────────────────────────
 
 function OrderDepth({ pair, online }: { pair: ForexPair; online: boolean }) {
   return <DepthOfMarketLadder pair={pair} online={online} />
@@ -2111,7 +2121,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
           const pairNow = pairsRef.current.find(p => p.symbol === order.pair)
           if (!pairNow || !hasFreshRate(order.pair)) return prev
           const fillPrice = order.direction === "BUY" ? pairNow.ask : pairNow.bid
-          const margin = calcMargin(order.pair, order.lotSize, fillPrice, order.leverage)
+          const margin = calcMargin(order.pair, order.lotSize, fillPrice, order.leverage, isChallengeAccount ? pairs : undefined)
           if (walletBalance < margin) {
             deletePendingOrder(order.id)
             showToast("error", `${order.orderType.replace("_", " ")} cancelled — need $${margin.toFixed(2)} margin, have $${walletBalance.toFixed(2)}`)
@@ -2190,7 +2200,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
         }
       }
 
-      const { pnl, pipCount, returnOnMargin } = calcPnl(t, currentPrice, t.pair)
+      const { pnl, pipCount, returnOnMargin } = calcPnl(t, currentPrice, t.pair, isChallengeAccount ? pairs : undefined)
 
       // SL check
       if (effectiveSl !== null) {
@@ -2230,7 +2240,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
         closingTradeIds.current.add(id)
 
         // --- Compute close values OUTSIDE any state updater ---
-        const { pnl: finalPnlRaw, pipCount: finalPips } = calcPnl(trade, price, trade.pair)
+        const { pnl: finalPnlRaw, pipCount: finalPips } = calcPnl(trade, price, trade.pair, isChallengeAccount ? pairs : undefined)
         const finalPnl = parseFloat((finalPnlRaw + trade.swap).toFixed(2))
         const closed: ClosedTrade = {
           ...trade, closePrice: price,
@@ -2341,8 +2351,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     pendingMeta?: { orderType: PendingOrder["orderType"]; price: number; expiry: "GTC" | "TODAY" },
   ) => {
     if (!selectedPair) return
-    const margin  = calcMargin(selectedPair.symbol, lot, price, lev)
-    const pv      = pipValue(selectedPair.symbol, lot, price)
+    const margin  = calcMargin(selectedPair.symbol, lot, price, lev, isChallengeAccount ? pairs : undefined)
+    const pv      = pipValue(selectedPair.symbol, lot, price, isChallengeAccount ? pairs : undefined)
     const cs      = contractSize(selectedPair.symbol)
     const liqDist = margin / (lot * cs)   // distance from entry to liquidation in price units
     const liqPrice = dir === "BUY" ? parseFloat((price - liqDist).toFixed(5)) : parseFloat((price + liqDist).toFixed(5))
@@ -2394,7 +2404,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       showToast("error", "Use valid numbers for Stop Loss, Take Profit, and Trailing Stop")
       return
     }
-    const margin = calcMargin(selectedPair.symbol, lot, price, lev)
+    const margin = calcMargin(selectedPair.symbol, lot, price, lev, isChallengeAccount ? pairs : undefined)
+    if (isChallengeAccount && margin <= 0) { showToast("warning", "Waiting for a fresh currency conversion quote."); return }
     if (isFundedAccount && margin < 3000) { showToast("error", "Funded accounts require a minimum order amount of 3000"); return }
 
     if (slNum !== null && tradeDirection === "BUY"  && slNum >= price) { showToast("error", "SL must be below entry for BUY"); return }
@@ -2421,8 +2432,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const updateConfirmLotSize = (value: string) => {
   if (!tradeConfirm || !selectedPair) return
   const nextLot = Math.min(100, Math.max(0.01, Number(value) || 0.01))
-  const margin = calcMargin(selectedPair.symbol, nextLot, tradeConfirm.price, tradeConfirm.leverage)
-  const pipVal = pipValue(selectedPair.symbol, nextLot, tradeConfirm.price)
+  const margin = calcMargin(selectedPair.symbol, nextLot, tradeConfirm.price, tradeConfirm.leverage, isChallengeAccount ? pairs : undefined)
+  const pipVal = pipValue(selectedPair.symbol, nextLot, tradeConfirm.price, isChallengeAccount ? pairs : undefined)
   const cs = contractSize(selectedPair.symbol)
   const liqDist = margin / (nextLot * cs)
   const liqPrice = tradeConfirm.direction === "BUY"
@@ -2433,9 +2444,9 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
   const updateConfirmLeverage = (value: string) => {
     if (!tradeConfirm || !selectedPair) return
-const maxLeverage = 100
-  const nextLeverage = Math.min(maxLeverage, Math.max(1, Number(value) || 1))
-    const margin = calcMargin(selectedPair.symbol, tradeConfirm.lotSize, tradeConfirm.price, nextLeverage)
+    const maxLeverage = isChallengeAccount ? 30 : 100
+    const nextLeverage = Math.min(maxLeverage, Math.max(1, Number(value) || 1))
+    const margin = calcMargin(selectedPair.symbol, tradeConfirm.lotSize, tradeConfirm.price, nextLeverage, isChallengeAccount ? pairs : undefined)
     const cs = contractSize(selectedPair.symbol)
     const liqDist = margin / (tradeConfirm.lotSize * cs)
     const liqPrice = tradeConfirm.direction === "BUY"
@@ -2570,7 +2581,7 @@ const maxLeverage = 100
   }
   const lev = effectiveLeverage
   const price  = dir === "BUY" ? selectedPair.ask : selectedPair.bid
-  const margin = calcMargin(selectedPair.symbol, lot, price, lev)
+  const margin = calcMargin(selectedPair.symbol, lot, price, lev, isChallengeAccount ? pairs : undefined)
   if (isFundedAccount && margin < 3000) {
   const message = "This funded account requires a minimum order amount of $3,000. Increase your position size before placing this trade."
   setTradeRestrictionNotice(message)
@@ -2618,7 +2629,7 @@ const maxLeverage = 100
     // --- Compute close values OUTSIDE any state updater ---
     const pairNow    = pairsRef.current.find(p => p.symbol === trade.pair)
     const closePrice = pairNow ? (trade.direction === "BUY" ? pairNow.bid : pairNow.ask) : trade.currentPrice
-    const { pnl: pnlRaw, pipCount } = calcPnl(trade, closePrice, trade.pair)
+    const { pnl: pnlRaw, pipCount } = calcPnl(trade, closePrice, trade.pair, isChallengeAccount ? pairs : undefined)
     const finalPnl   = parseFloat((pnlRaw + trade.swap).toFixed(2))
     const closed: ClosedTrade = {
       ...trade, closePrice,
@@ -2718,7 +2729,7 @@ const maxLeverage = 100
     trades.forEach(trade => {
       const pairNow    = pairsRef.current.find(p => p.symbol === trade.pair)
       const closePrice = pairNow ? (trade.direction === "BUY" ? pairNow.bid : pairNow.ask) : trade.currentPrice
-      const { pnl: pnlRaw } = calcPnl(trade, closePrice, trade.pair)
+      const { pnl: pnlRaw } = calcPnl(trade, closePrice, trade.pair, isChallengeAccount ? pairs : undefined)
       realizedPnl += pnlRaw + trade.swap
     })
     trades.forEach(trade => closeTrade(trade.id, "account_breach"))
@@ -2750,7 +2761,7 @@ const maxLeverage = 100
 
     // Scale P&L proportionally to the closed lot fraction
     const lotFraction = closeLots / trade.lotSize
-    const { pnl: pnlRaw, pipCount } = calcPnl({ ...trade, lotSize: closeLots }, closePrice, trade.pair)
+    const { pnl: pnlRaw, pipCount } = calcPnl({ ...trade, lotSize: closeLots }, closePrice, trade.pair, isChallengeAccount ? pairs : undefined)
     const finalPnl = parseFloat((pnlRaw + trade.swap * lotFraction).toFixed(2))
     const closedMargin = parseFloat((trade.margin * lotFraction).toFixed(2))
 
@@ -2895,14 +2906,14 @@ const maxLeverage = 100
   const parsedLotSize = Number.parseFloat(lotSize)
   const estimateLotSize = Number.isFinite(parsedLotSize) && parsedLotSize > 0 ? parsedLotSize : 0.01
   const estimatedMargin = selectedPair
-    ? calcMargin(selectedPair.symbol, estimateLotSize, entryPrice, effectiveLeverage)
+    ? calcMargin(selectedPair.symbol, estimateLotSize, entryPrice, effectiveLeverage, isChallengeAccount ? pairs : undefined)
     : 0
   const estimatedFees: number | null = null
   const estimatedSpreadCost = selectedPair
-    ? pipValue(selectedPair.symbol, estimateLotSize, marketEntryPrice) * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)
+    ? pipValue(selectedPair.symbol, estimateLotSize, marketEntryPrice, isChallengeAccount ? pairs : undefined) * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)
     : 0
   const pipVal = selectedPair
-    ? pipValue(selectedPair.symbol, estimateLotSize, entryPrice)
+    ? pipValue(selectedPair.symbol, estimateLotSize, entryPrice, isChallengeAccount ? pairs : undefined)
     : 0
   const isUp = selectedPair ? selectedPair.change >= 0 : true
   const lastCandle = selectedPair?.candles?.slice(-1)[0]
@@ -4880,7 +4891,7 @@ setSelectedPair(p)
 	                          <div className="flex items-center gap-3 text-slate-400">
 	                            <span>SL: <strong className="text-rose-400">{o.sl ? fmt(o.sl, o.pair) : "—"}</strong></span>
 	                            <span>TP: <strong className="text-emerald-400">{o.tp ? fmt(o.tp, o.pair) : "—"}</strong></span>
-	                            <span>Margin: <strong className="text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</strong></span>
+	                            <span>Margin: <strong className="text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage, isChallengeAccount ? pairs : undefined).toFixed(2)}</strong></span>
 	                          </div>
 	                          <button
 	                            type="button"
@@ -5272,7 +5283,7 @@ setSelectedPair(p)
                   <p className="mt-1 text-[9px] text-slate-400">Choose leverage before placing the order.</p>
                 </div>
                 <select id="confirm-leverage" value={tradeConfirm.leverage} onChange={(event) => updateConfirmLeverage(event.target.value)} disabled={confirmLoading} className="h-8 rounded-lg border border-amber-500/40 bg-slate-950 px-3 text-center font-mono text-sm font-bold text-amber-200 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-300/30 disabled:opacity-40" aria-label="Trade leverage">
-                  {[1, 5, 10, 20, 50, 100].map(value => <option key={value} value={value} style={{ background: "#080c14", color: "#fbbf24" }}>1:{value}</option>)}
+                  {[1, 5, 10, 20, 30, 50, 100].filter(value => !isChallengeAccount || value <= 30).map(value => <option key={value} value={value} style={{ background: "#080c14", color: "#fbbf24" }}>1:{value}</option>)}
                 </select>
               </div>
             </div>

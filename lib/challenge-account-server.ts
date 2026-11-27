@@ -118,7 +118,9 @@ export function getChallengeOpenPositionPnl(
       Number(position.open_price),
       closePrice,
       Number(position.swap) || 0,
+      rates,
     )
+    if (!Number.isFinite(result.pnl)) return { pnl: 0, complete: false }
     pnl += result.pnl
   }
 

@@ -237,7 +237,14 @@ function ChallengeContent() {
           </Card>
         ) : null}
 
-        {status === "active" && plan && metrics ? (
+        {status === "active" && plan && metrics?.quotesCurrent === false && (
+          <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
+            <CardHeader><CardTitle className="text-white">Evaluation paused for market quotes</CardTitle></CardHeader>
+            <CardContent className="text-sm leading-6 text-slate-400">Your positions and trading history are safe. Equity and loss limits will update when fresh market and currency conversion quotes are available. New orders remain paused until then.</CardContent>
+          </Card>
+        )}
+
+        {status === "active" && plan && metrics && metrics.quotesCurrent !== false ? (
           <>
             <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
               <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -259,11 +266,11 @@ function ChallengeContent() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-white">Profit target progress</p>
-                      <p className="mt-1 text-xs text-slate-400">{Number(metrics.profitPercent).toFixed(2)}% of {plan.profitTargetPercent}% required</p>
+                      <p className="mt-1 text-xs text-slate-400">{Number(metrics.creditedProfitPercent).toFixed(2)}% credited of {plan.profitTargetPercent}% required · actual equity must also reach {CURRENCY.format(Number(metrics.profitTarget))}</p>
                     </div>
                     <p className="font-mono text-sm font-semibold text-amber-100">{progress.toFixed(1)}%</p>
                   </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-label="Profit target progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-label="Credited profit target progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
                     <div className="h-full rounded-full bg-[#d6b66b] transition-[width]" style={{ width: `${progress}%` }} />
                   </div>
                   <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
@@ -277,12 +284,13 @@ function ChallengeContent() {
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2">
-                  <Rule title="Profit target" value={`+${plan.profitTargetPercent}%`} detail={`Reach ${CURRENCY.format(Number(metrics.profitTarget) || 0)} equity.`} />
+                  <Rule title="Profit target" value={`+${plan.profitTargetPercent}% credited`} detail={`Reach ${CURRENCY.format(Number(metrics.profitTarget) || 0)} equity and ${plan.profitTargetPercent}% credited net profit. Losses count in full.`} />
                   <Rule title="Daily loss limit" value={`${plan.dailyLossLimitPercent}%`} detail={`Measured against the recorded evaluation equity at the start of each UTC day.`} />
                   <Rule title="Maximum drawdown" value={`${plan.maxDrawdownPercent}%`} detail={`Static floor at ${CURRENCY.format(Number(metrics.maxEquityDrawdown) || 0)} of starting balance.`} />
-                  <Rule title="Minimum trading days" value={`${plan.minimumTradingDays} days`} detail={`Complete ${plan.minimumTradingDays} separate UTC trading days. A day counts once all its positions close. Any positions left at midnight UTC are automatically closed at the next available quote.`} />
+                  <Rule title="Five-trading-day window" value={`${plan.maximumTradingDays ?? 5} days`} detail={`Complete the target by the end of your fifth separate UTC trading day, not five calendar days from activation. A day counts once all its positions close. Positions left at midnight UTC close at the next available quote.`} />
+                  <Rule title="Daily consistency cap" value={`${plan.dailyProfitCreditPercent ?? 4}% credited`} detail="Each completed UTC trading day credits at most 4% of starting capital toward the 8% target. Extra profit remains in actual equity; daily net losses count in full. Active evaluations follow these rules too." />
                   <Rule title="Leverage" value={`Up to ${plan.leverage}:1`} detail="The server rejects orders above the plan limit." />
-                  <Rule title="Eligible to pass" value={Number(metrics.openPositions) === 0 && Number(participant.challenge_trading_days) >= plan.minimumTradingDays && Number(metrics.equity) >= Number(metrics.profitTarget) ? "Yes" : "Not yet"} detail="Target and minimum trading days must both be met." />
+                  <Rule title="Eligible to pass" value={Number(metrics.openPositions) === 0 && Number(participant.challenge_trading_days) === (plan.maximumTradingDays ?? 5) && Number(metrics.equity) >= Number(metrics.profitTarget) && Number(metrics.creditedProfitPercent) >= plan.profitTargetPercent ? "Yes" : "Not yet"} detail="Both the credited target and actual equity target must be reached within five completed trading days, with no positions open." />
                 </div>
               </CardContent>
             </Card>
@@ -323,9 +331,9 @@ function ChallengeContent() {
                         <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Virtual starting capital</span><strong className="font-mono text-3xl tracking-tight">{CURRENCY.format(item.startingBalance)}</strong></div>
                         <div className="grid grid-cols-2 gap-3 border-y border-[color:var(--terminal-graphite-border)] py-3">
                           <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Profit target</span><strong className="font-mono">{CURRENCY.format(item.startingBalance * item.profitTargetPercent / 100)}</strong></div>
-                          <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Minimum days</span><strong className="font-mono">{item.minimumTradingDays} days</strong></div>
+                          <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Trading window</span><strong className="font-mono">{item.maximumTradingDays ?? 5} days</strong></div>
                         </div>
-                        <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{item.dailyLossLimitPercent}% daily loss · {item.maxDrawdownPercent}% max drawdown · up to {item.leverage}:1 leverage</p>
+                        <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{item.dailyProfitCreditPercent ?? 4}% daily profit credit cap · {item.dailyLossLimitPercent}% daily loss · {item.maxDrawdownPercent}% max drawdown · up to {item.leverage}:1 leverage</p>
                         <p className="text-xs font-medium text-[color:var(--brand-primary)]">{item.key === "challenge_5k" ? "Pass for funding review · no cash reward" : "Pass for a reviewed reward · up to 50% of net simulated profit"}</p>
                         <div className="mt-auto flex flex-col gap-2 border-t border-[color:var(--terminal-graphite-border)] pt-3"><div className="flex items-center justify-between gap-2"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">One-time evaluation fee</span><span className="flex items-baseline gap-2">{item.originalFee && <del className="font-mono text-sm text-[color:var(--terminal-graphite-muted)]">{CURRENCY.format(item.originalFee)}</del>}<strong className="font-mono text-xl font-bold text-[color:var(--brand-primary)]">{CURRENCY.format(item.fee)}</strong></span></div>{item.discountPercent && <span className="text-xs font-medium text-[color:var(--brand-primary)]">{item.discountPercent}% discount applied · pay {CURRENCY.format(item.fee)}</span>}</div>
                       </CardContent>

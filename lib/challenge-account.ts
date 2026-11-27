@@ -13,13 +13,15 @@ export interface ChallengePlan {
   dailyLossLimitPercent: number
   maxDrawdownPercent: number
   minimumTradingDays: number
+  maximumTradingDays?: number
+  dailyProfitCreditPercent?: number
   leverage: number
 }
 
 export const DEFAULT_CHALLENGE_PLANS: ChallengePlan[] = [
-  { key: "challenge_5k", name: "Challenge 5K", fee: 12.5, originalFee: 25, discountPercent: 50, startingBalance: 5_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
-  { key: "challenge_10k", name: "Challenge 10K", fee: 89, startingBalance: 10_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
-  { key: "challenge_25k", name: "Challenge 25K", fee: 179, startingBalance: 25_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
+  { key: "challenge_5k", name: "Challenge 5K", fee: 12.5, originalFee: 25, discountPercent: 50, startingBalance: 5_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, maximumTradingDays: 5, dailyProfitCreditPercent: 4, leverage: 30 },
+  { key: "challenge_10k", name: "Challenge 10K", fee: 89, startingBalance: 10_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, maximumTradingDays: 5, dailyProfitCreditPercent: 4, leverage: 30 },
+  { key: "challenge_25k", name: "Challenge 25K", fee: 179, startingBalance: 25_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, maximumTradingDays: 5, dailyProfitCreditPercent: 4, leverage: 30 },
 ]
 
 const challengeFeeFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })
@@ -55,12 +57,15 @@ export function getChallengeSnapshot(
   dayStartEquity: number,
   tradingDays: number,
   status: ChallengeStatus = "active",
+  creditedProfit = 0,
+  deadlineReached = false,
 ) {
   const profitTarget = plan.startingBalance * (1 + plan.profitTargetPercent / 100)
   const maxEquityDrawdown = plan.startingBalance * (1 - plan.maxDrawdownPercent / 100)
   const dailyLossFloor = dayStartEquity * (1 - plan.dailyLossLimitPercent / 100)
   const breached = equity <= maxEquityDrawdown || equity <= dailyLossFloor
-  const eligibleToPass = equity >= profitTarget && tradingDays >= plan.minimumTradingDays
+  const eligibleToPass = !breached && equity >= profitTarget && creditedProfit >= plan.startingBalance * plan.profitTargetPercent / 100 && tradingDays >= plan.minimumTradingDays && tradingDays <= (plan.maximumTradingDays ?? 5)
+  const creditedProfitPercent = (creditedProfit / plan.startingBalance) * 100
   const profitPercent = ((equity - plan.startingBalance) / plan.startingBalance) * 100
   const dailyLossPercent = dayStartEquity > 0 ? ((dayStartEquity - equity) / dayStartEquity) * 100 : 0
   const drawdownPercent = ((plan.startingBalance - equity) / plan.startingBalance) * 100
@@ -70,18 +75,36 @@ export function getChallengeSnapshot(
     maxEquityDrawdown,
     dailyLossFloor,
     breached,
+    deadlineReached,
     eligibleToPass,
+    creditedProfit,
+    creditedProfitPercent,
     profitPercent,
     dailyLossPercent,
     drawdownPercent,
-    status: breached ? "failed" : eligibleToPass ? "passed" : status,
+    status: breached ? "failed" : eligibleToPass ? "passed" : deadlineReached ? "failed" : status,
   }
 }
 
-export function calculateChallengeMargin(pair: string, lotSize: number, price: number, leverage: number) {
+export type ChallengeConversionRates = Record<string, { bid: number; ask: number }>
+
+function quoteToUsd(pair: string, price: number, rates?: ChallengeConversionRates | null): number | null {
+  const [base, quote] = pair.split("/")
+  if (quote === "USD") return 1
+  if (base === "USD") return 1 / price
+  const direct = rates?.[`${quote}/USD`]
+  if (direct && direct.bid > 0 && direct.ask >= direct.bid) return (direct.bid + direct.ask) / 2
+  const inverse = rates?.[`USD/${quote}`]
+  if (inverse && inverse.bid > 0 && inverse.ask >= inverse.bid) return 2 / (inverse.bid + inverse.ask)
+  return null
+}
+
+export function calculateChallengeMargin(pair: string, lotSize: number, price: number, leverage: number, rates?: ChallengeConversionRates | null) {
   if (![lotSize, price, leverage].every(Number.isFinite) || lotSize <= 0 || price <= 0 || leverage <= 0) return 0
-  const base = pair.split("/")[0]
-  const notional = base === "USD" ? lotSize * contractSize(pair) : lotSize * contractSize(pair) * price
+  const [base] = pair.split("/")
+  const conversion = quoteToUsd(pair, price, rates)
+  if (conversion === null) return 0
+  const notional = base === "USD" ? lotSize * contractSize(pair) : lotSize * contractSize(pair) * price * conversion
   return Number((notional / leverage).toFixed(2))
 }
 
@@ -92,6 +115,7 @@ export function calculateChallengePnl(
   openPrice: number,
   closePrice: number,
   swap = 0,
+  rates?: ChallengeConversionRates | null,
 ) {
   if (![lotSize, openPrice, closePrice, swap].every(Number.isFinite) || lotSize <= 0 || openPrice <= 0 || closePrice <= 0) {
     return { pnl: 0, pips: 0 }
@@ -100,13 +124,12 @@ export function calculateChallengePnl(
   const pipSize = pip(pair)
   if (pipSize <= 0) return { pnl: 0, pips: 0 }
 
+  const conversion = quoteToUsd(pair, closePrice, rates)
+  if (conversion === null) return { pnl: Number.NaN, pips: 0 }
   const directionMultiplier = direction === "BUY" ? 1 : -1
   const priceDelta = (closePrice - openPrice) * directionMultiplier
   const pipCount = priceDelta / pipSize
-  const isUsdBase = pair.split("/")[0] === "USD"
-  const pipValue = isUsdBase
-    ? (lotSize * contractSize(pair) * pipSize) / closePrice
-    : lotSize * contractSize(pair) * pipSize
+  const pipValue = lotSize * contractSize(pair) * pipSize * conversion
 
   return {
     pnl: Number((pipCount * pipValue + swap).toFixed(2)),

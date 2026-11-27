@@ -155,6 +155,7 @@ function PredictPageContent() {
   const demoBalance = Number(demoAccount.available_balance || 0)
   const demoProfitLoss = Number(demoAccount.settled_profit_loss || 0)
   const walletBalance = Number(participantData?.account_balance ?? participantData?.wallet_balance ?? 0)
+  const isChallengeAccount = participantData?.account_type === "challenge"
   const fundedPredictionMax = getFundedPredictionMaxAmount(
     participantData?.account_type,
     walletBalance,
@@ -219,6 +220,7 @@ function PredictPageContent() {
         localStorage.setItem("participantData", JSON.stringify(fresh))
         return fresh
       })
+      if (json.participant.account_type === "challenge") setTradeMode("demo")
       setParticipantError(null)
     } catch (error) {
       console.error("[v0] Participant data refresh failed:", error)
@@ -324,6 +326,11 @@ function PredictPageContent() {
 
   const handlePlaceBet = async () => {
     if (isPlacingTrade || !selectedAsset) return
+    if (isChallengeAccount && tradeMode === "real") {
+      toast({ title: "Real predictions are unavailable for challenge accounts", variant: "destructive" })
+      setTradeMode("demo")
+      return
+    }
 
     const amount = Number.parseFloat(betAmount)
     const accountLabel = tradeMode === "demo" ? "demo" : "real"
@@ -514,11 +521,11 @@ function PredictPageContent() {
               <p className="price-mono text-sm font-bold text-[var(--brand-primary)]">${demoBalance.toFixed(2)}</p>
             </div>
             <div className="terminal-panel hidden min-w-32 rounded-xl px-3 py-2 md:block">
-              <p className="text-xs text-[var(--terminal-graphite-muted)]">Real</p>
+              <p className="text-xs text-[var(--terminal-graphite-muted)]">{isChallengeAccount ? "Challenge balance" : "Real"}</p>
               <p className="price-mono text-sm font-bold text-[var(--terminal-graphite-positive)]">${walletBalance.toFixed(2)}</p>
             </div>
             <div className="terminal-panel rounded-xl px-2.5 py-1.5 sm:hidden">
-              <p className="text-xs text-[var(--terminal-graphite-muted)]">Real balance</p>
+              <p className="text-xs text-[var(--terminal-graphite-muted)]">{isChallengeAccount ? "Challenge balance" : "Real balance"}</p>
               <p className="price-mono text-sm font-bold text-[var(--terminal-graphite-positive)]">${walletBalance.toFixed(2)}</p>
             </div>
             <Button
@@ -577,7 +584,9 @@ function PredictPageContent() {
               <div className="min-w-0">
                 <h2 id="prediction-account-title" className="text-sm font-bold text-[var(--terminal-graphite-text)] sm:text-base">Prediction account</h2>
                 <p className="mt-1 hidden text-sm leading-relaxed text-[var(--terminal-graphite-muted)] sm:block">
-                  Practice safely with demo funds, or switch to real mode to trade from your account balance.
+                  {isChallengeAccount
+                    ? "Challenge accounts can practice predictions with demo funds only. Real-balance predictions are unavailable."
+                    : "Practice safely with demo funds, or switch to real mode to trade from your account balance."}
                 </p>
               </div>
             </div>
@@ -587,7 +596,7 @@ function PredictPageContent() {
                 type="single"
                 value={tradeMode}
                 onValueChange={(value) => {
-                  if (!value) return
+                  if (!value || (isChallengeAccount && value === "real")) return
                   setTradeMode(value as "demo" | "real")
                   setBetAmount("")
                 }}
@@ -599,14 +608,14 @@ function PredictPageContent() {
                   <span className="flex items-center gap-1.5 text-xs text-[var(--terminal-graphite-muted)]"><ShieldCheck aria-hidden="true" /> Demo</span>
                   <span className="price-mono text-base font-bold text-[var(--brand-primary)]">${demoBalance.toFixed(2)}</span>
                 </ToggleGroupItem>
-                <ToggleGroupItem value="real" className="h-auto min-h-12 flex-col items-start gap-0.5 px-3 py-1.5 sm:min-h-16 sm:gap-1 sm:py-2 data-[state=on]:border-[var(--terminal-graphite-positive)] data-[state=on]:bg-[color-mix(in_srgb,var(--terminal-graphite-positive)_10%,var(--terminal-graphite-surface))]">
+                <ToggleGroupItem value="real" disabled={isChallengeAccount} className="h-auto min-h-12 flex-col items-start gap-0.5 px-3 py-1.5 sm:min-h-16 sm:gap-1 sm:py-2 data-[state=on]:border-[var(--terminal-graphite-positive)] data-[state=on]:bg-[color-mix(in_srgb,var(--terminal-graphite-positive)_10%,var(--terminal-graphite-surface))]">
                   <span className="flex items-center gap-1.5 text-xs text-[var(--terminal-graphite-muted)]"><WalletCards aria-hidden="true" /> Real</span>
                   <span className="price-mono text-base font-bold text-[var(--terminal-graphite-positive)]">${walletBalance.toFixed(2)}</span>
                 </ToggleGroupItem>
               </ToggleGroup>
 
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--terminal-graphite-muted)]">
-                <span>{tradeMode === "demo" ? `Practice P/L ${demoProfitLoss >= 0 ? "+" : "−"}$${Math.abs(demoProfitLoss).toFixed(2)}` : "Real trades affect your withdrawable balance"}</span>
+                <span>{isChallengeAccount ? "Real predictions are not available for challenge accounts" : tradeMode === "demo" ? `Practice P/L ${demoProfitLoss >= 0 ? "+" : "−"}$${Math.abs(demoProfitLoss).toFixed(2)}` : "Real trades affect your withdrawable balance"}</span>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button type="button" variant="outline" size="sm" disabled={demoAccount.open_trades > 0 || isResettingDemo} className="border-[var(--terminal-graphite-border)] text-[var(--terminal-graphite-text)]">
@@ -1217,7 +1226,7 @@ function PredictPageContent() {
                 type="single"
                 value={tradeMode}
                 onValueChange={(value) => {
-                  if (!value) return
+                  if (!value || (isChallengeAccount && value === "real")) return
                   setTradeMode(value as "demo" | "real")
                   setBetAmount("")
                 }}
@@ -1228,10 +1237,11 @@ function PredictPageContent() {
                 <ToggleGroupItem value="demo" className="min-h-11 gap-2 data-[state=on]:border-[var(--brand-primary)] data-[state=on]:text-[var(--brand-primary)]">
                   <ShieldCheck aria-hidden="true" /> Demo
                 </ToggleGroupItem>
-                <ToggleGroupItem value="real" className="min-h-11 gap-2 data-[state=on]:border-[var(--terminal-graphite-positive)] data-[state=on]:text-[var(--terminal-graphite-positive)]">
+                <ToggleGroupItem value="real" disabled={isChallengeAccount} className="min-h-11 gap-2 data-[state=on]:border-[var(--terminal-graphite-positive)] data-[state=on]:text-[var(--terminal-graphite-positive)]">
                   <WalletCards aria-hidden="true" /> Real
                 </ToggleGroupItem>
               </ToggleGroup>
+              {isChallengeAccount && <p className="text-sm text-[var(--terminal-graphite-muted)]">Challenge accounts can only use demo funds for predictions.</p>}
               <div
                 className="flex items-center justify-between gap-3 rounded-xl border p-3"
                 style={{
