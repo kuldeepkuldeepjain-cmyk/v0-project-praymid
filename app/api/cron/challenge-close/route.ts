@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool, withTransaction } from '@/lib/db'
 import { calculateChallengePnl, getChallengePlan, getChallengeSnapshot } from '@/lib/challenge-account'
 import { failChallengeAccount, getChallengeExecutionPrice, getLiveChallengeRates } from '@/lib/challenge-account-server'
-import { refreshChallengeDays } from '@/lib/challenge-days-server'
+import { refreshChallengeDays, challengeDeadlineReached } from '@/lib/challenge-days-server'
 
 export const maxDuration = 60
 
@@ -44,14 +44,40 @@ export async function GET(request: NextRequest) {
             VALUES ($1,$2,$3,$4,$5,$6,$7,'completed')`, [id, account.email, amount < 0 ? 'forex_pnl_loss' : 'forex_pnl_profit', Math.abs(amount), `Daily auto-close — ${trade.id}`, balance, next])
           balance = next
         }
-        const days = await refreshChallengeDays(client, id)
-        const snapshot = getChallengeSnapshot(plan, balance, Number(account.challenge_day_start_equity) || plan.startingBalance, days)
-        if (snapshot.breached) await failChallengeAccount(client, account, balance)
+        const progress = await refreshChallengeDays(client, id, plan.startingBalance, plan.dailyProfitCreditPercent)
+        const snapshot = getChallengeSnapshot(plan, balance, Number(account.challenge_day_start_equity) || plan.startingBalance, progress.days, 'active', progress.creditedProfit, challengeDeadlineReached(progress.days, progress.lastDay, plan.maximumTradingDays))
+        if (snapshot.breached || (snapshot.deadlineReached && !snapshot.eligibleToPass)) await failChallengeAccount(client, account, balance)
         else {
           await client.query(`UPDATE participants SET account_balance = $2, challenge_peak_equity = GREATEST(challenge_peak_equity, $2),
             challenge_status = $3, challenge_passed_at = CASE WHEN $3 = 'passed' THEN NOW() ELSE challenge_passed_at END,
             challenge_passed_equity = CASE WHEN $3 = 'passed' THEN $2 ELSE challenge_passed_equity END, updated_at = NOW() WHERE id = $1`, [id, balance, snapshot.status])
           if (snapshot.eligibleToPass) await client.query(`UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW() WHERE participant_id = $1 AND status = 'pending'`, [id])
+        }
+      })
+      settled++
+    } catch { deferred++ }
+  }
+  const expired = await db.query(`SELECT id FROM participants WHERE account_type = 'challenge' AND challenge_status = 'active'
+    AND challenge_trading_days >= 5 AND challenge_last_trading_date < (NOW() AT TIME ZONE 'UTC')::date
+    AND NOT EXISTS (SELECT 1 FROM forex_trades WHERE participant_id = participants.id AND status = 'open') LIMIT 100`)
+  for (const { id } of expired.rows) {
+    try {
+      await withTransaction(async client => {
+        const { rows: [account] } = await client.query(`SELECT id, email, account_balance, challenge_day_start_equity, challenge_plan_key
+          FROM participants WHERE id = $1 AND account_type = 'challenge' AND challenge_status = 'active' FOR UPDATE`, [id])
+        if (!account) return
+        const plan = getChallengePlan(account.challenge_plan_key)
+        if (!plan) throw new Error('Missing plan')
+        const progress = await refreshChallengeDays(client, id, plan.startingBalance, plan.dailyProfitCreditPercent)
+        const snapshot = getChallengeSnapshot(plan, Number(account.account_balance), Number(account.challenge_day_start_equity) || plan.startingBalance,
+          progress.days, 'active', progress.creditedProfit, challengeDeadlineReached(progress.days, progress.lastDay, plan.maximumTradingDays))
+        if (snapshot.eligibleToPass) {
+          await client.query(`UPDATE participants SET challenge_status = 'passed', challenge_passed_at = NOW(),
+            challenge_passed_equity = account_balance, updated_at = NOW() WHERE id = $1`, [id])
+          await client.query(`UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
+            WHERE participant_id = $1 AND status = 'pending'`, [id])
+        } else if (snapshot.deadlineReached || snapshot.breached) {
+          await failChallengeAccount(client, account, Number(account.account_balance))
         }
       })
       settled++

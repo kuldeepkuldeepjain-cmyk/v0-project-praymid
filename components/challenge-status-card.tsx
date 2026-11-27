@@ -53,11 +53,11 @@ export function ChallengeStatusCard({ onStatusChange }: { onStatusChange?: (stat
                   <p className="mt-0.5 font-mono text-sm font-semibold text-white">${Number(metrics.equity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400">Profit target</p>
-                  <p className="mt-0.5 text-sm font-semibold text-white">+{Number(metrics.profitPercent).toFixed(2)}% / +{plan.profitTargetPercent}%</p>
+                  <p className="text-xs text-slate-400">Credited profit</p>
+                  <p className="mt-0.5 text-sm font-semibold text-white">{Number(metrics.creditedProfitPercent).toFixed(2)}% / {plan.profitTargetPercent}%</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400">Trading days</p>
+                  <p className="text-xs text-slate-400">Completed / allowed days</p>
                   <p className="mt-0.5 text-sm font-semibold text-white">{Number(participant.challenge_trading_days) || 0} / {plan.minimumTradingDays}</p>
                 </div>
               </div>
@@ -76,7 +76,7 @@ export function ChallengeStatusCard({ onStatusChange }: { onStatusChange?: (stat
             )}
             {status === "active" && metrics && metrics.quotesCurrent !== false && (
               <div className="mt-3 flex items-center gap-3">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-label="Profit target progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-700" role="progressbar" aria-label="Credited profit target progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
                   <div className="h-full rounded-full bg-[#d6b66b] transition-[width]" style={{ width: `${progress}%` }} />
                 </div>
                 <span className="font-mono text-xs text-amber-100">{progress.toFixed(0)}%</span>

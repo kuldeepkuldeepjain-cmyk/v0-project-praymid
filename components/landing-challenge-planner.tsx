@@ -66,7 +66,7 @@ export function ChallengePlanner() {
         <p className="elite-eyebrow">Challenge snapshot</p>
         <h3 className="mt-3 text-xl font-semibold">A clear scorecard. A measured approach.</h3>
         <ul className="mt-5 flex flex-col gap-3 text-sm">
-          <li className="flex items-start gap-2.5"><Check className="elite-positive mt-0.5 size-4 shrink-0" aria-hidden="true" />{selected.minimumTradingDays} minimum trading days</li>
+          <li className="flex items-start gap-2.5"><Check className="elite-positive mt-0.5 size-4 shrink-0" aria-hidden="true" />Reach 8% credited profit within {selected.maximumTradingDays ?? 5} trading days · max {selected.dailyProfitCreditPercent ?? 4}% credited per UTC day</li>
           <li className="flex items-start gap-2.5"><Check className="elite-positive mt-0.5 size-4 shrink-0" aria-hidden="true" />Up to {selected.leverage}:1 leverage</li>
           <li className="flex items-start gap-2.5"><Check className="elite-positive mt-0.5 size-4 shrink-0" aria-hidden="true" />Risk limits visible before registration</li>
           <li className="flex items-start gap-2.5"><Check className="elite-positive mt-0.5 size-4 shrink-0" aria-hidden="true" />Eligibility and terms apply</li>

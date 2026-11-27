@@ -13,13 +13,15 @@ export interface ChallengePlan {
   dailyLossLimitPercent: number
   maxDrawdownPercent: number
   minimumTradingDays: number
+  maximumTradingDays?: number
+  dailyProfitCreditPercent?: number
   leverage: number
 }
 
 export const DEFAULT_CHALLENGE_PLANS: ChallengePlan[] = [
-  { key: "challenge_5k", name: "Challenge 5K", fee: 12.5, originalFee: 25, discountPercent: 50, startingBalance: 5_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
-  { key: "challenge_10k", name: "Challenge 10K", fee: 89, startingBalance: 10_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
-  { key: "challenge_25k", name: "Challenge 25K", fee: 179, startingBalance: 25_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
+  { key: "challenge_5k", name: "Challenge 5K", fee: 12.5, originalFee: 25, discountPercent: 50, startingBalance: 5_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, maximumTradingDays: 5, dailyProfitCreditPercent: 4, leverage: 30 },
+  { key: "challenge_10k", name: "Challenge 10K", fee: 89, startingBalance: 10_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, maximumTradingDays: 5, dailyProfitCreditPercent: 4, leverage: 30 },
+  { key: "challenge_25k", name: "Challenge 25K", fee: 179, startingBalance: 25_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, maximumTradingDays: 5, dailyProfitCreditPercent: 4, leverage: 30 },
 ]
 
 const challengeFeeFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })
@@ -55,12 +57,15 @@ export function getChallengeSnapshot(
   dayStartEquity: number,
   tradingDays: number,
   status: ChallengeStatus = "active",
+  creditedProfit = 0,
+  deadlineReached = false,
 ) {
   const profitTarget = plan.startingBalance * (1 + plan.profitTargetPercent / 100)
   const maxEquityDrawdown = plan.startingBalance * (1 - plan.maxDrawdownPercent / 100)
   const dailyLossFloor = dayStartEquity * (1 - plan.dailyLossLimitPercent / 100)
   const breached = equity <= maxEquityDrawdown || equity <= dailyLossFloor
-  const eligibleToPass = equity >= profitTarget && tradingDays >= plan.minimumTradingDays
+  const eligibleToPass = !breached && equity >= profitTarget && creditedProfit >= plan.startingBalance * plan.profitTargetPercent / 100 && tradingDays >= plan.minimumTradingDays && tradingDays <= (plan.maximumTradingDays ?? 5)
+  const creditedProfitPercent = (creditedProfit / plan.startingBalance) * 100
   const profitPercent = ((equity - plan.startingBalance) / plan.startingBalance) * 100
   const dailyLossPercent = dayStartEquity > 0 ? ((dayStartEquity - equity) / dayStartEquity) * 100 : 0
   const drawdownPercent = ((plan.startingBalance - equity) / plan.startingBalance) * 100
@@ -70,11 +75,14 @@ export function getChallengeSnapshot(
     maxEquityDrawdown,
     dailyLossFloor,
     breached,
+    deadlineReached,
     eligibleToPass,
+    creditedProfit,
+    creditedProfitPercent,
     profitPercent,
     dailyLossPercent,
     drawdownPercent,
-    status: breached ? "failed" : eligibleToPass ? "passed" : status,
+    status: breached ? "failed" : eligibleToPass ? "passed" : deadlineReached ? "failed" : status,
   }
 }
 

@@ -5,7 +5,7 @@ import { requireParticipantSession } from "@/lib/auth-middleware"
 import { DEFAULT_CHALLENGE_PLANS, getChallengePlan, getChallengeSnapshot } from "@/lib/challenge-account"
 import { failChallengeAccount, getChallengeOpenPositionPnl, getLiveChallengeRates } from "@/lib/challenge-account-server"
 
-import { refreshChallengeDays, isPriorSession } from '@/lib/challenge-days-server'
+import { refreshChallengeDays, challengeDeadlineReached, isPriorSession } from '@/lib/challenge-days-server'
 
 const PAYMENT_NETWORKS = new Set(["TRC20", "BEP20", "ERC20"])
 
@@ -49,7 +49,10 @@ export async function GET(request: NextRequest) {
       }
       if (!plan || !["active", "passed"].includes(currentStatus)) return summary
 
-      if (currentStatus === 'active') participant.challenge_trading_days = await refreshChallengeDays(client, participant.id)
+      const progress = currentStatus === 'active'
+        ? await refreshChallengeDays(client, participant.id, plan.startingBalance, plan.dailyProfitCreditPercent)
+        : null
+      if (progress) participant.challenge_trading_days = progress.days
       const openTrades = (await client.query(
         `SELECT pair, direction, lot_size, open_price, swap, margin, open_timestamp
          FROM forex_trades WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
@@ -67,10 +70,11 @@ export async function GET(request: NextRequest) {
       const dayStartEquity = storedDayStartDate === today
         ? Number(participant.challenge_day_start_equity) || plan.startingBalance
         : equity
-      const snapshot = getChallengeSnapshot(plan, equity, dayStartEquity, Number(participant.challenge_trading_days) || 0, currentStatus)
+      const deadlineReached = progress ? challengeDeadlineReached(progress.days, progress.lastDay, plan.maximumTradingDays) : false
+      const snapshot = getChallengeSnapshot(plan, equity, dayStartEquity, Number(participant.challenge_trading_days) || 0, currentStatus, progress?.creditedProfit ?? 0, deadlineReached)
 
       if (currentStatus === "active" && openPnl.complete && !openTrades.some(t => isPriorSession(t.open_timestamp))) {
-        if (snapshot.breached) {
+        if (snapshot.breached || (snapshot.deadlineReached && (!snapshot.eligibleToPass || openTrades.length > 0))) {
           await failChallengeAccount(client, participant, equity)
           participant.account_balance = 0
           participant.challenge_failed_at = new Date().toISOString()
@@ -111,9 +115,11 @@ export async function GET(request: NextRequest) {
         maxEquityDrawdown: snapshot.maxEquityDrawdown,
         dailyLossFloor: snapshot.dailyLossFloor,
         profitPercent: snapshot.profitPercent,
+        creditedProfit: snapshot.creditedProfit,
+        creditedProfitPercent: snapshot.creditedProfitPercent,
         dailyLossPercent: snapshot.dailyLossPercent,
         drawdownPercent: snapshot.drawdownPercent,
-        progressPercent: Math.max(0, Math.min(100, ((equity - plan.startingBalance) / (snapshot.profitTarget - plan.startingBalance)) * 100)),
+        progressPercent: Math.max(0, Math.min(100, snapshot.creditedProfit / (plan.startingBalance * plan.profitTargetPercent / 100) * 100)),
       } }
     })
     if (!account) return NextResponse.json({ success: false, message: "Participant not found" }, { status: 404 })

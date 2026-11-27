@@ -10,7 +10,7 @@ import {
 } from "@/lib/funded-account"
 import { enforceRateLimit, getActiveRestriction, getSecurityContext, inspectTradeRisk, recordSecurityEvent, recordTradeRiskFlags, updateParticipantSecurityProfile } from "@/lib/security"
 
-import { refreshChallengeDays, requireCurrentSession } from '@/lib/challenge-days-server'
+import { refreshChallengeDays, challengeDeadlineReached, requireCurrentSession } from '@/lib/challenge-days-server'
 
 function utcDateKey() {
   return new Date().toISOString().slice(0, 10)
@@ -305,12 +305,12 @@ export async function POST(req: NextRequest) {
           const dayStartEquity = isNewChallengeDay
             ? equityBefore
             : Number(account.challenge_day_start_equity) || accountChallengePlan.startingBalance
-          const tradingDays = Number(account.challenge_trading_days) || 0
-          const snapshot = getChallengeSnapshot(accountChallengePlan, equityBefore, dayStartEquity, tradingDays, "active")
-          if (snapshot.breached) {
+          const progress = await refreshChallengeDays(client, account.id, accountChallengePlan.startingBalance, accountChallengePlan.dailyProfitCreditPercent)
+          const snapshot = getChallengeSnapshot(accountChallengePlan, equityBefore, dayStartEquity, progress.days, "active", progress.creditedProfit, challengeDeadlineReached(progress.days, progress.lastDay, accountChallengePlan.maximumTradingDays))
+          if (snapshot.breached || snapshot.deadlineReached) {
             await failChallengeAccount(client, { id: account.id, email: participant_email }, equityBefore)
             await client.query("COMMIT")
-            return NextResponse.json({ success: false, error: "Challenge loss limit reached. The evaluation is now failed." }, { status: 403 })
+            return NextResponse.json({ success: false, error: snapshot.deadlineReached ? "The five-trading-day Challenge window has ended. The evaluation is now failed." : "Challenge loss limit reached. The evaluation is now failed." }, { status: 403 })
           }
 
           const inserted = await client.query(
@@ -338,7 +338,7 @@ export async function POST(req: NextRequest) {
                challenge_day_start_date = $4::date, challenge_trading_days = $3,
                challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $5), $5), updated_at = NOW()
              WHERE id = $6`,
-            [balanceAfter, dayStartEquity, await refreshChallengeDays(client, account.id), today, equityBefore, account.id],
+            [balanceAfter, dayStartEquity, (await refreshChallengeDays(client, account.id, accountChallengePlan.startingBalance, accountChallengePlan.dailyProfitCreditPercent)).days, today, equityBefore, account.id],
           )
           await client.query(
             `INSERT INTO transactions (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
@@ -406,6 +406,10 @@ export async function POST(req: NextRequest) {
           const lockedPlan = getChallengePlan(account.challenge_plan_key)
           if (account.challenge_status !== "active" || !lockedPlan) {
             throw Object.assign(new Error("Challenge trading is not active."), { status: 403 })
+          }
+          const progress = await refreshChallengeDays(client, account.id, lockedPlan.startingBalance, lockedPlan.dailyProfitCreditPercent)
+          if (challengeDeadlineReached(progress.days, progress.lastDay, lockedPlan.maximumTradingDays)) {
+            throw Object.assign(new Error("The five-trading-day Challenge window has ended. New orders are not allowed."), { status: 403 })
           }
           if (Number(trade.leverage) > lockedPlan.leverage) {
             throw Object.assign(new Error(`Challenge leverage is capped at ${lockedPlan.leverage}:1.`), { status: 400 })
@@ -595,11 +599,12 @@ export async function POST(req: NextRequest) {
             const remainingMargin = Number(remainingMarginResult.rows[0]?.amount) || 0
             const today = utcDateKey()
             const isNewChallengeDay = utcDateColumnKey(participant.challenge_day_start_date) !== today
-            nextTradingDays = await refreshChallengeDays(client, participant.id)
+            const progress = await refreshChallengeDays(client, participant.id, plan.startingBalance, plan.dailyProfitCreditPercent)
+            nextTradingDays = progress.days
             nextDayStart = isNewChallengeDay ? equityBefore : nextDayStart
             currentEquity = Number((balanceAfter + remainingMargin + (remainingPnl.complete ? remainingPnl.pnl : 0)).toFixed(2))
-            const snapshot = getChallengeSnapshot(plan, currentEquity, nextDayStart, nextTradingDays, "active")
-            challengeStatus = snapshot.breached
+            const snapshot = getChallengeSnapshot(plan, currentEquity, nextDayStart, nextTradingDays, "active", progress.creditedProfit, challengeDeadlineReached(nextTradingDays, progress.lastDay, plan.maximumTradingDays))
+            challengeStatus = snapshot.breached || (snapshot.deadlineReached && (!snapshot.eligibleToPass || remainingTrades.length > 0))
               ? "failed"
               : snapshot.eligibleToPass && remainingTrades.length === 0
                 ? "passed"
@@ -963,10 +968,11 @@ export async function PATCH(req: NextRequest) {
             const dayStartEquity = isNewChallengeDay
               ? equityBefore
               : Number(participant.challenge_day_start_equity) || plan.startingBalance
-            const tradingDays = await refreshChallengeDays(client, participant.id)
+            const progress = await refreshChallengeDays(client, participant.id, plan.startingBalance, plan.dailyProfitCreditPercent)
+            const tradingDays = progress.days
             challengeEquity = Number((balanceAfter + remainingMargin + (remainingPnl.complete ? remainingPnl.pnl : 0)).toFixed(2))
-            const snapshot = getChallengeSnapshot(plan, challengeEquity, dayStartEquity, tradingDays, "active")
-            challengeStatus = snapshot.breached
+            const snapshot = getChallengeSnapshot(plan, challengeEquity, dayStartEquity, tradingDays, "active", progress.creditedProfit, challengeDeadlineReached(tradingDays, progress.lastDay, plan.maximumTradingDays))
+            challengeStatus = snapshot.breached || (snapshot.deadlineReached && (!snapshot.eligibleToPass || remainingTrades.length > 0))
               ? "failed"
               : snapshot.eligibleToPass && remainingTrades.length === 0
                 ? "passed"
@@ -1167,12 +1173,12 @@ export async function PATCH(req: NextRequest) {
           const dayStartEquity = isNewChallengeDay
             ? equityBefore
             : Number(participant.challenge_day_start_equity) || challengePlan.startingBalance
-          const tradingDays = Number(participant.challenge_trading_days) || 0
-          const snapshot = getChallengeSnapshot(challengePlan, equityBefore, dayStartEquity, tradingDays, "active")
-          if (snapshot.breached) {
+          const progress = await refreshChallengeDays(client, participant.id, challengePlan.startingBalance, challengePlan.dailyProfitCreditPercent)
+          const snapshot = getChallengeSnapshot(challengePlan, equityBefore, dayStartEquity, progress.days, "active", progress.creditedProfit, challengeDeadlineReached(progress.days, progress.lastDay, challengePlan.maximumTradingDays))
+          if (snapshot.breached || snapshot.deadlineReached) {
             await failChallengeAccount(client, { id: participant.id, email: participant_email }, equityBefore)
             await client.query("COMMIT")
-            return NextResponse.json({ success: false, error: "Challenge loss limit reached. The evaluation is now failed." }, { status: 403 })
+            return NextResponse.json({ success: false, error: snapshot.deadlineReached ? "The five-trading-day Challenge window has ended. The evaluation is now failed." : "Challenge loss limit reached. The evaluation is now failed." }, { status: 403 })
           }
 
           const updated = await client.query(
@@ -1188,7 +1194,7 @@ export async function PATCH(req: NextRequest) {
                challenge_day_start_date = $4::date, challenge_trading_days = $3,
                challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $5), $5), updated_at = NOW()
              WHERE id = $6`,
-            [balanceAfter, dayStartEquity, await refreshChallengeDays(client, participant.id), today, equityBefore, participant.id],
+            [balanceAfter, dayStartEquity, (await refreshChallengeDays(client, participant.id, challengePlan.startingBalance, challengePlan.dailyProfitCreditPercent)).days, today, equityBefore, participant.id],
           )
           await client.query(
             `INSERT INTO transactions (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
